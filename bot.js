@@ -14,14 +14,15 @@ bot.onText(/\/start/, (msg) => {
   const greetings = {
     ko: `🇰🇷 안녕하세요, ${name}님!
 
-📺 *KOREA·TV — 텔레그램에서 실시간 채널 24개*
+📺 *KOREA·TV — 텔레그램에서 실시간 채널 27개*
 
 한국 방송을 온라인으로 시청하세요 — 무료, VPN 불필요, 가입 불필요, 24/7.
 
 🌏 *국제:* 아리랑TV, 아리랑라디오
+📡 *지상파:* SBS
 📚 *EBS:* 1TV, 2TV, 플러스1, 플러스2, 키즈, 잉글리시
 🏛️ *공영·정책:* KTV, 국악방송, 방송대학TV, 농수산방송
-📍 *지역:* 제주MBC, 광주KBC, 울산UBC, 교통방송TBS, 춘천MBC, 대전MBC, NHTV
+📍 *지역:* 제주MBC, 광주KBC, 울산UBC, 교통방송TBS, 춘천MBC, 대전MBC, 충북MBC, OBS경인TV, NHTV
 ⛪ *종교·기타:* BTN, GoodTV, ABN, FGTV, RUTC
 
 ✅ HD · iOS · Android · Desktop
@@ -30,14 +31,15 @@ bot.onText(/\/start/, (msg) => {
 
     en: `🇰🇷 Hello, ${name}!
 
-📺 *KOREA·TV — 24 live channels on Telegram*
+📺 *KOREA·TV — 27 live channels on Telegram*
 
 Watch South Korean television online — free, no VPN, no registration, 24/7.
 
 🌏 *International:* Arirang TV, Arirang Radio
+📡 *National:* SBS
 📚 *EBS:* 1TV, 2TV, Plus1, Plus2, Kids, English
 🏛️ *Public/Culture:* KTV, Gugak TV, OUN, NBS
-📍 *Regional:* MBC Jeju, SBS KBC, SBS UBC, TBS Seoul, MBC Chuncheon, MBC Daejeon, NHTV
+📍 *Regional:* MBC Jeju, SBS KBC, SBS UBC, TBS Seoul, MBC Chuncheon, MBC Daejeon, MBC Chungbuk, OBS Gyeonggi, NHTV
 ⛪ *Religious/Other:* BTN, GoodTV, ABN, FGTV, RUTC
 
 ✅ HD · iOS · Android · Desktop
@@ -70,13 +72,16 @@ Watch South Korean television online — free, no VPN, no registration, 24/7.
 bot.onText(/^\/post$/, async (msg) => {
   try {
     const post = await bot.sendMessage(CHANNEL,
-`🇰🇷 *KOREA·TV — 24 КАНАЛА В ПРЯМОМ ЭФИРЕ* 🔴
+`🇰🇷 *KOREA·TV — 27 КАНАЛОВ В ПРЯМОМ ЭФИРЕ* 🔴
 
 Смотрите южнокорейское телевидение прямо в Telegram — *бесплатно, без VPN, без регистрации, 24/7.*
 
 ━━━━━━━━━━━━━━━━━━━━
 🌏 *МЕЖДУНАРОДНЫЕ*
 ▪️ Arirang TV · Arirang Radio
+
+📡 *ЭФИРНЫЕ*
+▪️ SBS
 
 📚 *EBS*
 ▪️ EBS 1TV · EBS 2TV · EBS Plus1 · EBS Plus2 · EBS Kids · EBS English
@@ -85,7 +90,7 @@ bot.onText(/^\/post$/, async (msg) => {
 ▪️ KTV · Gugak TV · OUN · NBS
 
 📍 *РЕГИОНАЛЬНЫЕ*
-▪️ MBC Jeju · SBS KBC · SBS UBC · TBS Seoul · MBC Chuncheon · MBC Daejeon · NHTV
+▪️ MBC Jeju · SBS KBC · SBS UBC · TBS Seoul · MBC Chuncheon · MBC Daejeon · MBC Chungbuk · OBS Gyeonggi · NHTV
 
 ⛪ *ПРОЧИЕ*
 ▪️ BTN TV · GoodTV · ABN TV · FGTV · RUTC TV
