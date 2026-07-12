@@ -2,7 +2,7 @@
 // Клон структуры russia-worker.js (github.com/varenik-ai/russia-tv-hub)
 // Деплой: cd ~/korea-worker && cp ~/south-korea-tv-hub/korea-worker.js src/index.js && npx wrangler deploy
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -11,19 +11,20 @@ const CORS = {
 };
 
 // Подтверждённые рабочие потоки — каждый проверен прямым HTTP-запросом
-// (2026-07-12, второй проход): статус 200, Content-Type application/x-mpegURL /
+// (2026-07-12, четвёртый проход): статус 200, Content-Type application/x-mpegURL /
 // application/vnd.apple.mpegurl, непустое тело ответа. Источники —
-// hujingguang/ChinaIPTV и iptv-org/iptv (оба открытые GitHub-плейлисты).
+// hujingguang/ChinaIPTV, iptv-org/iptv, Free-TV/IPTV, MyeongJun-Park/iptv
+// (все открытые GitHub-плейлисты).
 //
-// Из ~60 проверенных кандидатов рабочими подтвердились эти 27. Источники
-// третьего прохода — Free-TV/IPTV и MyeongJun-Park/iptv (открытые
-// GitHub-плейлисты). Мёртвые/не проверяемые (KBS1, KBS2, KBS World +
-// зеркала, YTN (оба порта), tvN, Channel A, TV Chosun/2, SBS KNN, CGNTV,
-// BBS, MTN, Job Plus TV, WBS TV, National Assembly TV, MBC Busan, MBC
-// Daegu, MBC Jeonju, MBC Gyeongnam, KNN, TJB, JTV, RTV и др.) сюда не
-// включены — см. README_DEPLOY.md. GCN24 (지구촌복음방송) технически
-// рабочий, но сознательно не включён — канал связан с организацией, чей
-// основатель осуждён по уголовному делу.
+// Из ~90 проверенных кандидатов рабочими подтвердились эти 35. По просьбе
+// пользователя в этот проход включены и технически рабочие, но
+// легитимностью-сомнительные каналы (GCN — организация связана с уголовным
+// делом основателя; SBS/OBS через community-зеркало allanf181/adaptive-streams) —
+// см. README_DEPLOY.md для деталей. Мёртвые/не проверяемые (KBS1, KBS2, KBS
+// World + зеркала, YTN (оба порта), tvN, Channel A, TV Chosun/2, SBS KNN,
+// CGNTV, BBS, CTS, MTN, Job Plus TV, WBS TV, MBC Busan, MBC Daegu, MBC
+// Jeonju, MBC Gyeongnam, KNN, TJB, JTV, RTV, HCN Busan и др.) сюда не
+// включены — см. README_DEPLOY.md.
 const STREAMS = {
   // ── Международное вещание ─────────────────────────────────────────
   arirang:       'https://amdlive-ch01-ctnd-com.akamaized.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8',
@@ -65,6 +66,22 @@ const STREAMS = {
   nhtv:          'http://nonghyup.flive.skcdn.com/nonghyup/_definst_/nhlive/playlist.m3u8',
   mbc_chuncheon: 'https://stream.chmbc.co.kr/TV/myStream/playlist.m3u8',
   mbc_daejeon:   'https://ns1.tjmbc.co.kr/live/myStream.sdp/playlist.m3u8',
+  nib:           'http://stream.nibtv.co.kr:1935/live/nib/playlist.m3u8',
+  jjctv:         'https://jjctv.ecn.cdn.infralab.net/jjctv/live/playlist.m3u8',
+  kcn:           'http://62db982017b54.streamlock.net:1935/live/_definst_/tv.stream/playlist.m3u8',
+
+  // ── Государственные (доп.) ────────────────────────────────────────
+  natv: 'https://m.webcast.go.kr/live/_definst_/smil:natv_720p.smil/playlist.m3u8',
+
+  // ── Экономические / деловые ────────────────────────────────────────
+  wowtv:  'http://cdnmlive.wowtv.co.kr/wowmo/livestream/playlist.m3u8',
+  mkmoney:'http://mmoney.flive.skcdn.com/mmoneymobile/smil:money.smil/playlist.m3u8',
+
+  // ── Шопинг ────────────────────────────────────────────────────────
+  ktalpha: 'https://livetv.kshop.co.kr/klive/_definst_/smil:klive.smil/playlist.m3u8',
+
+  // ── Сомнительная легитимность (технически рабочие, включены по запросу) ──
+  gcn: 'http://liveko24-manminglobal3.ktcdn.co.kr/liveko24/gcnko_1300k.stream/playlist.m3u8',
 };
 
 addEventListener('fetch', event => {
