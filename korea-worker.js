@@ -2,7 +2,7 @@
 // Клон структуры russia-worker.js (github.com/varenik-ai/russia-tv-hub)
 // Деплой: cd ~/korea-worker && cp ~/south-korea-tv-hub/korea-worker.js src/index.js && npx wrangler deploy
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -15,13 +15,15 @@ const CORS = {
 // application/vnd.apple.mpegurl, непустое тело ответа. Источники —
 // hujingguang/ChinaIPTV и iptv-org/iptv (оба открытые GitHub-плейлисты).
 //
-// Из ~40 проверенных кандидатов рабочими подтвердились эти 24. Мёртвые/не
-// проверяемые (KBS1, KBS2, KBS World + зеркало vtvprime, YTN (оба порта),
-// tvN, Channel A, TV Chosun/2, SBS KNN, CGNTV, BBS, MTN, OBS Gyeongin,
-// Job Plus TV, WBS TV, National Assembly TV, MBC Busan, MBC Daegu, MBC
-// Jeonju, MBC Gyeongnam, RTV и др.) сюда не включены — см. README_DEPLOY.md.
-// GCN24 (지구촌복음방송) технически рабочий, но сознательно не включён —
-// канал связан с организацией, чей основатель осуждён по уголовному делу.
+// Из ~60 проверенных кандидатов рабочими подтвердились эти 27. Источники
+// третьего прохода — Free-TV/IPTV и MyeongJun-Park/iptv (открытые
+// GitHub-плейлисты). Мёртвые/не проверяемые (KBS1, KBS2, KBS World +
+// зеркала, YTN (оба порта), tvN, Channel A, TV Chosun/2, SBS KNN, CGNTV,
+// BBS, MTN, Job Plus TV, WBS TV, National Assembly TV, MBC Busan, MBC
+// Daegu, MBC Jeonju, MBC Gyeongnam, KNN, TJB, JTV, RTV и др.) сюда не
+// включены — см. README_DEPLOY.md. GCN24 (지구촌복음방송) технически
+// рабочий, но сознательно не включён — канал связан с организацией, чей
+// основатель осуждён по уголовному делу.
 const STREAMS = {
   // ── Международное вещание ─────────────────────────────────────────
   arirang:       'https://amdlive-ch01-ctnd-com.akamaized.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8',
@@ -42,10 +44,15 @@ const STREAMS = {
   nbs:   'https://media.joycorp.co.kr:4443/live/ngrp:live_all/playlist.m3u8',
   tbs:   'https://cdntv.tbs.seoul.kr/tbs/tbs_tv_web.smil/playlist.m3u8',
 
+  // ── Национальное вещание ──────────────────────────────────────────
+  sbs: 'https://allanf181.github.io/adaptive-streams/streams/kr/SBSTV.m3u8',
+
   // ── Региональные MBC/SBS-филиалы ───────────────────────────────────
-  mbc_jeju: 'https://wowza.jejumbc.com/live/tv_jejumbc/playlist.m3u8',
+  mbc_jeju:      'https://wowza.jejumbc.com/live/tv_jejumbc/playlist.m3u8',
+  mbc_chungbuk:  'http://211.33.246.4:32954/cj_live/myStream.sdp/playlist.m3u8',
   sbs_kbc:  'https://vod.ikbc.co.kr/KBCTV/tv/playlist.m3u8',
   sbs_ubc:  'https://stream.ubc.co.kr/hls/ubctvstream/index.m3u8',
+  obs_gyeonggi: 'https://allanf181.github.io/adaptive-streams/streams/kr/OBSGyeonginTV.m3u8',
 
   // ── Религиозные / нишевые ──────────────────────────────────────────
   btn:    'https://btn.nowcdn.co.kr/btn/btnlive2m/playlist.m3u8',
