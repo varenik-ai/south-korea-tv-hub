@@ -2,7 +2,7 @@
 // Клон структуры russia-worker.js (github.com/varenik-ai/russia-tv-hub)
 // Деплой: cd ~/korea-worker && cp ~/south-korea-tv-hub/korea-worker.js src/index.js && npx wrangler deploy
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -11,15 +11,17 @@ const CORS = {
 };
 
 // Подтверждённые рабочие потоки — каждый проверен прямым HTTP-запросом
-// (2026-07-12): статус 200, Content-Type application/x-mpegURL /
+// (2026-07-12, второй проход): статус 200, Content-Type application/x-mpegURL /
 // application/vnd.apple.mpegurl, непустое тело ответа. Источники —
 // hujingguang/ChinaIPTV и iptv-org/iptv (оба открытые GitHub-плейлисты).
 //
-// Из ~30 проверенных кандидатов рабочими подтвердились эти 19. Мёртвые/не
-// проверяемые (KBS1, KBS2, KBS World, YTN, YTN World, tvN, Channel A,
-// TV Chosun/2, SBS KNN, CGNTV, National Assembly TV, MBC Jeonju, MBC
-// Gyeongnam, RTV и др.) сюда не включены — см. README_DEPLOY.md, таблица
-// проверки.
+// Из ~40 проверенных кандидатов рабочими подтвердились эти 24. Мёртвые/не
+// проверяемые (KBS1, KBS2, KBS World + зеркало vtvprime, YTN (оба порта),
+// tvN, Channel A, TV Chosun/2, SBS KNN, CGNTV, BBS, MTN, OBS Gyeongin,
+// Job Plus TV, WBS TV, National Assembly TV, MBC Busan, MBC Daegu, MBC
+// Jeonju, MBC Gyeongnam, RTV и др.) сюда не включены — см. README_DEPLOY.md.
+// GCN24 (지구촌복음방송) технически рабочий, но сознательно не включён —
+// канал связан с организацией, чей основатель осуждён по уголовному делу.
 const STREAMS = {
   // ── Международное вещание ─────────────────────────────────────────
   arirang:       'https://amdlive-ch01-ctnd-com.akamaized.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8',
@@ -49,6 +51,13 @@ const STREAMS = {
   btn:    'https://btn.nowcdn.co.kr/btn/btnlive2m/playlist.m3u8',
   goodtv: 'http://mobliestream.c3tv.com:1935/live/goodtv.sdp/playlist.m3u8',
   abn:    'https://vod2.abn.co.kr/IPHONE/abn.m3u8',
+  fgtv:   'https://fgtvlive.fgtv.com/smil:fgtv.smil/playlist.m3u8',
+  rutc:   'http://d26sxnc75smwvh.cloudfront.net/livehttporigin/rutclive_720p2.stream/playlist.m3u8',
+
+  // ── Прочие региональные/отраслевые ──────────────────────────────────
+  nhtv:          'http://nonghyup.flive.skcdn.com/nonghyup/_definst_/nhlive/playlist.m3u8',
+  mbc_chuncheon: 'https://stream.chmbc.co.kr/TV/myStream/playlist.m3u8',
+  mbc_daejeon:   'https://ns1.tjmbc.co.kr/live/myStream.sdp/playlist.m3u8',
 };
 
 addEventListener('fetch', event => {
