@@ -1,7 +1,10 @@
 const TelegramBot = require('node-telegram-bot-api');
 
-const TOKEN   = 'ТОКЕН_ОТ_BOTFATHER';           // получить у @BotFather
-const CHANNEL = '@KoreaTV_Hub_Live';             // создать канал заранее, добавить бота админом
+const TOKEN   = '8917618978:AAHm5EtmOHlbPbZixKnKxUmK-3Sv5P8Z8AY'; // @KoreaTVHub_bot, выдан @BotFather
+const CHANNEL = -1003991519999;                  // Korea TV Hub 🇰🇷 | Live Channels (приватный канал)
+                                                  // ⚠️ бота нужно вручную назначить админом канала
+                                                  // (Channel → Administrators → Add Admin → @KoreaTVHub_bot) —
+                                                  // поиск бота через веб-версию Telegram не сработал, сделайте это в приложении
 const APP_URL = 'https://t.me/KoreaTVHub_bot/koreatv';
 const WEB_URL = 'https://varenik-ai.github.io/south-korea-tv-hub/?v=1';
 
