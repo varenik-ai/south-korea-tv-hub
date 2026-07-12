@@ -2,7 +2,7 @@
 // Клон структуры russia-worker.js (github.com/varenik-ai/russia-tv-hub)
 // Деплой: cd ~/korea-worker && cp ~/south-korea-tv-hub/korea-worker.js src/index.js && npx wrangler deploy
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,15 +16,22 @@ const CORS = {
 // hujingguang/ChinaIPTV, iptv-org/iptv, Free-TV/IPTV, MyeongJun-Park/iptv
 // (все открытые GitHub-плейлисты).
 //
-// Из ~90 проверенных кандидатов рабочими подтвердились эти 35. По просьбе
-// пользователя в этот проход включены и технически рабочие, но
-// легитимностью-сомнительные каналы (GCN — организация связана с уголовным
-// делом основателя; SBS/OBS через community-зеркало allanf181/adaptive-streams) —
-// см. README_DEPLOY.md для деталей. Мёртвые/не проверяемые (KBS1, KBS2, KBS
-// World + зеркала, YTN (оба порта), tvN, Channel A, TV Chosun/2, SBS KNN,
-// CGNTV, BBS, CTS, MTN, Job Plus TV, WBS TV, MBC Busan, MBC Daegu, MBC
-// Jeonju, MBC Gyeongnam, KNN, TJB, JTV, RTV, HCN Busan и др.) сюда не
-// включены — см. README_DEPLOY.md.
+// Из ~100 проверенных кандидатов рабочими подтвердились эти 36. GCN (по
+// просьбе пользователя) удалён — легитимность организации-владельца
+// сомнительна. SBS/OBS через community-зеркало allanf181/adaptive-streams —
+// см. README_DEPLOY.md для деталей. Музыкальные каналы: попытка найти
+// прямые K-pop видео-каналы (Mnet, 1theK, SBS KPOP и т.д.) не увенчалась
+// успехом — единственный найденный источник (ythls.armelin.one,
+// YouTube→HLS прокси) не прошёл верификацию: он возвращает одинаковый
+// "успешный" ответ даже для заведомо несуществующего ID канала, то есть
+// не позволяет отличить рабочий поток от ошибки. Вместо этого добавлены
+// TBS eFM и TBS FM — официальные радиоканалы tbs.seoul.kr с музыкальным
+// вещанием (тот же домен, что и уже проверенный TBS TV). Мёртвые/не
+// проверяемые (KBS1, KBS2, KBS World + зеркала, YTN (оба порта), tvN,
+// Channel A, TV Chosun/2, SBS KNN, CGNTV, BBS, CTS, MTN, Job Plus TV, WBS
+// TV, MBC Busan, MBC Daegu, MBC Jeonju, MBC Gyeongnam, KNN, TJB, JTV, RTV,
+// HCN Busan, KMTV, SBS/MBC радио (mbc.co.kr, streamguys1.com) и др.) сюда
+// не включены — см. README_DEPLOY.md.
 const STREAMS = {
   // ── Международное вещание ─────────────────────────────────────────
   arirang:       'https://amdlive-ch01-ctnd-com.akamaized.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8',
@@ -80,8 +87,9 @@ const STREAMS = {
   // ── Шопинг ────────────────────────────────────────────────────────
   ktalpha: 'https://livetv.kshop.co.kr/klive/_definst_/smil:klive.smil/playlist.m3u8',
 
-  // ── Сомнительная легитимность (технически рабочие, включены по запросу) ──
-  gcn: 'http://liveko24-manminglobal3.ktcdn.co.kr/liveko24/gcnko_1300k.stream/playlist.m3u8',
+  // ── Музыка / радио ────────────────────────────────────────────────
+  tbs_efm: 'https://cdntv.tbs.seoul.kr/tbs/tbs_efm_web.smil/playlist.m3u8',
+  tbs_fm:  'https://cdntv.tbs.seoul.kr/tbs/tbs_fm_web.smil/playlist.m3u8',
 };
 
 addEventListener('fetch', event => {
