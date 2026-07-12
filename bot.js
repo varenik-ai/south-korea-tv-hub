@@ -14,7 +14,7 @@ bot.onText(/\/start/, (msg) => {
   const greetings = {
     ko: `🇰🇷 안녕하세요, ${name}님!
 
-📺 *KOREA·TV — 텔레그램에서 실시간 채널 35개*
+📺 *KOREA·TV — 텔레그램에서 실시간 채널 36개*
 
 한국 방송을 온라인으로 시청하세요 — 무료, VPN 불필요, 가입 불필요, 24/7.
 
@@ -25,7 +25,8 @@ bot.onText(/\/start/, (msg) => {
 📍 *지역:* 제주MBC, 광주KBC, 울산UBC, 교통방송TBS, 춘천MBC, 대전MBC, 충북MBC, OBS경인TV, NHTV, 남인천방송, 지방자치TV, 금강방송
 🏛️ *국가기관:* 국회방송
 📈 *경제·쇼핑:* 한국경제TV, 매일경제TV, KT알파쇼핑
-⛪ *종교·기타:* BTN, GoodTV, ABN, FGTV, RUTC, GCN(출처 불확실)
+⛪ *종교·기타:* BTN, GoodTV, ABN, FGTV, RUTC
+🎵 *음악·라디오:* TBS eFM, TBS FM
 
 ✅ HD · iOS · Android · Desktop
 
@@ -33,7 +34,7 @@ bot.onText(/\/start/, (msg) => {
 
     en: `🇰🇷 Hello, ${name}!
 
-📺 *KOREA·TV — 35 live channels on Telegram*
+📺 *KOREA·TV — 36 live channels on Telegram*
 
 Watch South Korean television online — free, no VPN, no registration, 24/7.
 
@@ -44,7 +45,8 @@ Watch South Korean television online — free, no VPN, no registration, 24/7.
 📍 *Regional:* MBC Jeju, SBS KBC, SBS UBC, TBS Seoul, MBC Chuncheon, MBC Daejeon, MBC Chungbuk, OBS Gyeonggi, NHTV, NIB, JJCTV, KCN
 🏛️ *Government:* National Assembly TV
 📈 *Business/Shopping:* WOWTV, MK Money, KT Alpha Shopping
-⛪ *Religious/Other:* BTN, GoodTV, ABN, FGTV, RUTC, GCN(unverified source)
+⛪ *Religious/Other:* BTN, GoodTV, ABN, FGTV, RUTC
+🎵 *Music/Radio:* TBS eFM, TBS FM
 
 ✅ HD · iOS · Android · Desktop
 
@@ -76,7 +78,7 @@ Watch South Korean television online — free, no VPN, no registration, 24/7.
 bot.onText(/^\/post$/, async (msg) => {
   try {
     const post = await bot.sendMessage(CHANNEL,
-`🇰🇷 *KOREA·TV — 35 КАНАЛОВ В ПРЯМОМ ЭФИРЕ* 🔴
+`🇰🇷 *KOREA·TV — 36 КАНАЛОВ В ПРЯМОМ ЭФИРЕ* 🔴
 
 Смотрите южнокорейское телевидение прямо в Telegram — *бесплатно, без VPN, без регистрации, 24/7.*
 
@@ -103,7 +105,10 @@ bot.onText(/^\/post$/, async (msg) => {
 ▪️ WOWTV · MK Money · KT Alpha Shopping
 
 ⛪ *ПРОЧИЕ*
-▪️ BTN TV · GoodTV · ABN TV · FGTV · RUTC TV · GCN (источник не подтверждён)
+▪️ BTN TV · GoodTV · ABN TV · FGTV · RUTC TV
+
+🎵 *МУЗЫКА · РАДИО*
+▪️ TBS eFM · TBS FM
 ━━━━━━━━━━━━━━━━━━━━
 
 ✅ HD · iOS · Android · Desktop
