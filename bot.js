@@ -14,15 +14,15 @@ bot.onText(/\/start/, (msg) => {
   const greetings = {
     ko: `🇰🇷 안녕하세요, ${name}님!
 
-📺 *KOREA·TV — 텔레그램에서 실시간 채널 19개*
+📺 *KOREA·TV — 텔레그램에서 실시간 채널 24개*
 
 한국 방송을 온라인으로 시청하세요 — 무료, VPN 불필요, 가입 불필요, 24/7.
 
 🌏 *국제:* 아리랑TV, 아리랑라디오
 📚 *EBS:* 1TV, 2TV, 플러스1, 플러스2, 키즈, 잉글리시
 🏛️ *공영·정책:* KTV, 국악방송, 방송대학TV, 농수산방송
-📍 *지역:* 제주MBC, 광주KBC, 울산UBC, 교통방송TBS
-⛪ *종교·기타:* BTN, GoodTV, ABN
+📍 *지역:* 제주MBC, 광주KBC, 울산UBC, 교통방송TBS, 춘천MBC, 대전MBC, NHTV
+⛪ *종교·기타:* BTN, GoodTV, ABN, FGTV, RUTC
 
 ✅ HD · iOS · Android · Desktop
 
@@ -30,15 +30,15 @@ bot.onText(/\/start/, (msg) => {
 
     en: `🇰🇷 Hello, ${name}!
 
-📺 *KOREA·TV — 19 live channels on Telegram*
+📺 *KOREA·TV — 24 live channels on Telegram*
 
 Watch South Korean television online — free, no VPN, no registration, 24/7.
 
 🌏 *International:* Arirang TV, Arirang Radio
 📚 *EBS:* 1TV, 2TV, Plus1, Plus2, Kids, English
 🏛️ *Public/Culture:* KTV, Gugak TV, OUN, NBS
-📍 *Regional:* MBC Jeju, SBS KBC, SBS UBC, TBS Seoul
-⛪ *Religious/Other:* BTN, GoodTV, ABN
+📍 *Regional:* MBC Jeju, SBS KBC, SBS UBC, TBS Seoul, MBC Chuncheon, MBC Daejeon, NHTV
+⛪ *Religious/Other:* BTN, GoodTV, ABN, FGTV, RUTC
 
 ✅ HD · iOS · Android · Desktop
 
@@ -70,7 +70,7 @@ Watch South Korean television online — free, no VPN, no registration, 24/7.
 bot.onText(/^\/post$/, async (msg) => {
   try {
     const post = await bot.sendMessage(CHANNEL,
-`🇰🇷 *KOREA·TV — 19 КАНАЛОВ В ПРЯМОМ ЭФИРЕ* 🔴
+`🇰🇷 *KOREA·TV — 24 КАНАЛА В ПРЯМОМ ЭФИРЕ* 🔴
 
 Смотрите южнокорейское телевидение прямо в Telegram — *бесплатно, без VPN, без регистрации, 24/7.*
 
@@ -85,10 +85,10 @@ bot.onText(/^\/post$/, async (msg) => {
 ▪️ KTV · Gugak TV · OUN · NBS
 
 📍 *РЕГИОНАЛЬНЫЕ*
-▪️ MBC Jeju · SBS KBC · SBS UBC · TBS Seoul
+▪️ MBC Jeju · SBS KBC · SBS UBC · TBS Seoul · MBC Chuncheon · MBC Daejeon · NHTV
 
 ⛪ *ПРОЧИЕ*
-▪️ BTN TV · GoodTV · ABN TV
+▪️ BTN TV · GoodTV · ABN TV · FGTV · RUTC TV
 ━━━━━━━━━━━━━━━━━━━━
 
 ✅ HD · iOS · Android · Desktop
