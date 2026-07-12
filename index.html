@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Korea TV Live</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { background:#0a0a14; height:100%; font-family:-apple-system,BlinkMacSystemFont,sans-serif; color:white; overflow:hidden; touch-action:pan-x pan-y pinch-zoom; }
+
+    /* ── Hub ── */
+    #hub-screen { display:flex; flex-direction:column; align-items:center; height:100%; overflow-y:auto; padding:24px 16px 40px; padding-top:calc(24px + max(var(--tg-safe-top,0px), env(safe-area-inset-top,0px))); }
+    .hub-logo { font-size:26px; font-weight:900; letter-spacing:2px; margin-bottom:4px; text-transform:uppercase; }
+    .hub-logo .red  { color:#CD2E3A; }
+    .hub-logo .white{ color:white; }
+    .hub-logo .blue { color:#0047A0; }
+    .hub-sub { font-size:13px; color:#555; margin-bottom:24px; }
+    .channels-grid { width:100%; max-width:560px; display:flex; flex-direction:column; gap:10px; }
+
+    .category-header { font-size:11px; font-weight:700; color:#444; text-transform:uppercase; letter-spacing:2px; padding:6px 4px 2px; margin-top:6px; }
+
+    .channel-card { background:#1a1a28; border:1px solid #2a2a3a; border-radius:14px; padding:16px 18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+    .channel-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:4px 0 0 4px; background:var(--ch-color,#555); }
+    .channel-card:active { opacity:.75; transform:scale(.98); }
+    .ch-icon { width:52px; height:52px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; flex-shrink:0; }
+    .ch-info { flex:1; }
+    .ch-name { font-size:16px; font-weight:700; margin-bottom:3px; }
+    .ch-desc { font-size:12px; color:#555; }
+    .live-dot { width:8px; height:8px; background:var(--ch-color,#555); border-radius:50%; animation:pulse 1.2s infinite; flex-shrink:0; }
+
+    .footer-note { font-size:11px; color:#444; text-align:center; margin-top:20px; line-height:1.6; max-width:480px; }
+
+    /* ── Player ── */
+    #player-screen { display:none; flex-direction:column; align-items:center; height:100%; }
+    .player-header { width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; padding-top:calc(10px + max(var(--tg-safe-top,0px), env(safe-area-inset-top,0px))); background:#0d0d1a; border-bottom:1px solid #1e1e2e; flex-shrink:0; }
+    .back-btn { background:#1a1a2e; border:1px solid #333; border-radius:8px; padding:7px 12px; color:#aaa; font-size:14px; cursor:pointer; }
+    .back-btn:active { opacity:.7; }
+    .ch-title-bar { font-size:15px; font-weight:700; }
+    .live-badge-top { color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; margin-left:6px; display:none; }
+
+    /* ── Video ── */
+    #video-container { width:100%; flex:1; background:#000; position:relative; overflow:visible; touch-action:pinch-zoom; }
+    #video-container.css-fs { position:fixed !important; inset:0 !important; width:100vw !important; height:100vh !important; z-index:9999 !important; }
+    #video-container.css-fs .live-badge,
+    #video-container:fullscreen .live-badge,
+    #video-container:-webkit-full-screen .live-badge { display:none !important; }
+    #video-container.css-fs .overlay { display:none !important; }
+    #video-container:fullscreen .overlay,
+    #video-container:-webkit-full-screen .overlay { display:none !important; }
+    video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; z-index:1; }
+    audio { display:none; }
+
+    .live-badge { position:absolute; top:14px; left:14px; color:white; font-size:13px; padding:5px 12px; border-radius:30px; display:none; align-items:center; gap:6px; font-weight:700; z-index:25; background:rgba(205,46,58,.9); }
+    #audio-badge { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:3; pointer-events:none; background:rgba(0,0,0,.85); }
+    #audio-badge .pill { padding:14px 20px; border-radius:999px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); font-size:15px; }
+    body.audio-only #audio-badge { display:flex; }
+    body.audio-only video { opacity:.02; }
+
+    .overlay { position:absolute; inset:0; z-index:20; pointer-events:none; transition:opacity .5s ease; }
+    .overlay.hidden { opacity:0; pointer-events:none; }
+    .controls { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.92)); padding:28px 14px; pointer-events:all; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+    .btn { padding:12px 18px; color:white; border:none; border-radius:10px; font-size:14px; cursor:pointer; transition:all .2s; flex:1; max-width:160px; background:rgba(255,255,255,.12); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.1); }
+    .btn:active { transform:scale(.96); }
+    .btn.danger { background:#CD2E3A; }
+    .btn.reload { background:#333; }
+
+    #status { font-size:13px; color:#888; text-align:center; padding:8px 0 0; flex-shrink:0; }
+    .dot { display:inline-block; width:8px; height:8px; background:#CD2E3A; border-radius:50%; margin-right:6px; animation:pulse 1.2s infinite; vertical-align:middle; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.25} }
+  </style>
+</head>
+<body>
+
+<div id="hub-screen">
+  <div class="hub-logo"><span class="red">한</span><span class="blue">국</span> <span class="white">TV</span></div>
+  <div class="hub-sub" id="hub-sub">LIVE — Free — 24/7</div>
+  <div class="channels-grid" id="channels-grid"></div>
+  <div class="footer-note" id="footer-note"></div>
+</div>
+
+<div id="player-screen">
+  <div class="player-header">
+    <button class="back-btn" id="back-btn">← Channels</button>
+    <span class="ch-title-bar" id="ch-title"></span>
+    <span class="live-badge-top" id="live-badge-top">LIVE</span>
+  </div>
+  <div id="video-container">
+    <div class="live-badge" id="live-badge"><span class="dot"></span> LIVE</div>
+    <div id="audio-badge"><div class="pill">🎧 Audio only</div></div>
+    <video id="video" autoplay playsinline webkit-playsinline airplay="allow" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;"></video>
+    <div class="overlay" id="overlay">
+      <div class="controls">
+        <button id="reload-btn" class="btn reload" style="display:none"></button>
+        <button id="unmute-btn" class="btn danger" style="display:none"></button>
+        <button id="mode-btn" class="btn"></button>
+        <button id="fullscreen-btn" class="btn"></button>
+        <button id="pip-btn" class="btn" style="display:none"></button>
+      </div>
+    </div>
+    <audio id="audio-bg" muted></audio>
+  </div>
+  <div id="status">...</div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+
+// ── Safe area ──────────────────────────────────────────────────────────────
+function updateSafeArea() {
+  const tgTop = tg?.contentSafeAreaInsets?.top || tg?.safeAreaInsets?.top || 0;
+  const top = tgTop > 0 ? tgTop : (document.fullscreenElement || tg?.isFullscreen ? 32 : 0);
+  document.documentElement.style.setProperty('--tg-safe-top', top + 'px');
+}
+if (tg) {
+  tg.ready(); tg.expand();
+  try { tg.disableVerticalSwipes(); } catch(e) {}
+  try { tg.setHeaderColor('#000000'); } catch(e) {}
+  try { tg.setBackgroundColor('#000000'); } catch(e) {}
+  if (isAndroid() || isIOS()) setTimeout(() => { try { tg.requestFullscreen(); } catch(e) {} }, 300);
+  try { tg.onEvent('safeAreaChanged', updateSafeArea); } catch(e) {}
+  try { tg.onEvent('contentSafeAreaChanged', updateSafeArea); } catch(e) {}
+  setTimeout(updateSafeArea, 500);
+}
+
+// ── Определение платформы ──────────────────────────────────────────────────
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    || window.Telegram?.WebApp?.platform === 'ios';
+}
+function isAndroid() { return /Android/i.test(navigator.userAgent); }
+
+// ── Каналы ────────────────────────────────────────────────────────────────
+// ВАЖНО: список содержит только реально проверенные потоки (прямой HTTP-запрос,
+// статус 200 + валидный Content-Type application/x-mpegURL / vnd.apple.mpegurl).
+// Мёртвые кандидаты (KBS1, KBS2, KBS World, YTN, YTN World, tvN, Channel A,
+// TV Chosun/2, SBS KNN, CGNTV и др.) сюда не включены — см. README_DEPLOY.md.
+const PROXY = 'https://korea-worker.dyaltd.workers.dev';
+
+const CHANNEL_GROUPS = [
+  {
+    label: '🌏 International',
+    channels: [
+      { id:'arirang',       name:'Arirang TV',    desc:'아리랑TV',     icon:'ARI', color:'#CD2E3A', iconBg:'#1a0808', stream: PROXY+'/stream?channel=arirang' },
+      { id:'arirang_radio', name:'Arirang Radio',  desc:'아리랑라디오',  icon:'AR',  color:'#0047A0', iconBg:'#08101a', stream: PROXY+'/stream?channel=arirang_radio' },
+    ]
+  },
+  {
+    label: '📚 EBS / Education',
+    channels: [
+      { id:'ebs1',        name:'EBS 1TV',      desc:'EBS 1TV',    icon:'E1', color:'#00838f', iconBg:'#081214', stream: PROXY+'/stream?channel=ebs1' },
+      { id:'ebs2',        name:'EBS 2TV',      desc:'EBS 2TV',    icon:'E2', color:'#00838f', iconBg:'#081214', stream: PROXY+'/stream?channel=ebs2' },
+      { id:'ebs_plus1',   name:'EBS Plus 1',   desc:'EBS플러스1',  icon:'E+1',color:'#00695c', iconBg:'#061212', stream: PROXY+'/stream?channel=ebs_plus1' },
+      { id:'ebs_plus2',   name:'EBS Plus 2',   desc:'EBS플러스2',  icon:'E+2',color:'#00695c', iconBg:'#061212', stream: PROXY+'/stream?channel=ebs_plus2' },
+      { id:'ebs_kids',    name:'EBS Kids',     desc:'EBS키즈',     icon:'EK', color:'#f9a825', iconBg:'#1a1400', stream: PROXY+'/stream?channel=ebs_kids' },
+      { id:'ebs_english', name:'EBS English',  desc:'EBS잉글리시',  icon:'EE', color:'#5e35b1', iconBg:'#120a1a', stream: PROXY+'/stream?channel=ebs_english' },
+    ]
+  },
+  {
+    label: '🏛️ 공영 · 정책 / Public & Culture',
+    channels: [
+      { id:'ktv',   name:'KTV', desc:'KTV 국민방송', icon:'KTV', color:'#0047A0', iconBg:'#08101a', stream: PROXY+'/stream?channel=ktv' },
+      { id:'gugak', name:'Gugak TV', desc:'국악방송', icon:'국악', color:'#8d6e63', iconBg:'#140f0c', stream: PROXY+'/stream?channel=gugak' },
+      { id:'oun',   name:'OUN', desc:'방송대학TV', icon:'OUN', color:'#1565c0', iconBg:'#0a0f1a', stream: PROXY+'/stream?channel=oun' },
+      { id:'nbs',   name:'NBS', desc:'농수산방송',  icon:'NBS', color:'#2e7d32', iconBg:'#081208', stream: PROXY+'/stream?channel=nbs' },
+    ]
+  },
+  {
+    label: '📍 지역 방송 / Regional',
+    channels: [
+      { id:'mbc_jeju', name:'MBC Jeju',  desc:'제주 MBC', icon:'제주', color:'#0288d1', iconBg:'#0a1018', stream: PROXY+'/stream?channel=mbc_jeju' },
+      { id:'sbs_kbc',  name:'SBS KBC',   desc:'광주방송',  icon:'KBC', color:'#c62828', iconBg:'#180808', stream: PROXY+'/stream?channel=sbs_kbc' },
+      { id:'sbs_ubc',  name:'SBS UBC',   desc:'울산방송',  icon:'UBC', color:'#c62828', iconBg:'#180808', stream: PROXY+'/stream?channel=sbs_ubc' },
+      { id:'tbs',      name:'TBS Seoul', desc:'교통방송',  icon:'TBS', color:'#455a64', iconBg:'#0d1214', stream: PROXY+'/stream?channel=tbs' },
+    ]
+  },
+  {
+    label: '⛪ 종교 · 기타 / Religious & Other',
+    channels: [
+      { id:'btn',    name:'BTN TV',  desc:'불교방송', icon:'BTN', color:'#f57f17', iconBg:'#1a1200', stream: PROXY+'/stream?channel=btn' },
+      { id:'goodtv', name:'GoodTV',  desc:'기독교TV', icon:'GTV', color:'#1976d2', iconBg:'#0a0f1a', stream: PROXY+'/stream?channel=goodtv' },
+      { id:'abn',    name:'ABN TV',  desc:'ABN',      icon:'ABN', color:'#6a1b9a', iconBg:'#140a18', stream: PROXY+'/stream?channel=abn' },
+    ]
+  },
+];
+
+// ── Переводы (только ko / en) ────────────────────────────────────────────────
+const T = {
+  ko:{ loading:'스트림 불러오는 중...', connecting:'연결 중...', live:'LIVE', pressPlay:'▶ 누르세요', errorStream:'오류 — 재연결 중...', errorUrl:'URL을 가져오지 못했습니다', errorServer:'서버 오류', reconnect:'🔄 재연결', unmute:'🔊 소리 켜기', mute:'🔇 소리 끄기', fullscreen:'🔳 전체화면', exitFs:'✕ 나가기', audioMode:'🎧 오디오만', videoMode:'🎥 비디오' },
+  en:{ loading:'Loading...', connecting:'Connecting...', live:'LIVE', pressPlay:'Press ▶', errorStream:'Error — reconnecting...', errorUrl:'Failed to get URL', errorServer:'Server error', reconnect:'🔄 Reconnect', unmute:'🔊 Unmute', mute:'🔇 Mute', fullscreen:'🔳 Fullscreen', exitFs:'✕ Exit', audioMode:'🎧 Audio only', videoMode:'🎥 Video' },
+};
+function getLang() {
+  try { const s=tg?.initDataUnsafe?.user?.language_code?.split('-')[0].toLowerCase(); if(s&&T[s]) return s; } catch(e) {}
+  const b=(navigator.language||'en').split('-')[0].toLowerCase(); return T[b]?b:'ko';
+}
+const lang = getLang();
+const t = T[lang];
+document.getElementById('hub-sub').textContent = lang==='ko' ? '실시간 — 무료 — 24시간' : 'LIVE — Free — 24/7';
+document.getElementById('back-btn').textContent = lang==='ko' ? '← 채널 목록' : '← Channels';
+document.getElementById('footer-note').textContent = lang==='ko'
+  ? '실시간으로 확인된 채널만 표시됩니다. 비공식 소스 채널은 예고 없이 중단될 수 있어 제외했습니다.'
+  : 'Only channels verified live are listed. Unofficial-source channels that failed verification were excluded.';
+
+// ── DOM ────────────────────────────────────────────────────────────────────
+const hubScreen     = document.getElementById('hub-screen');
+const playerScreen  = document.getElementById('player-screen');
+const channelsGrid  = document.getElementById('channels-grid');
+const backBtn       = document.getElementById('back-btn');
+const chTitle       = document.getElementById('ch-title');
+const liveBadgeTop  = document.getElementById('live-badge-top');
+const video         = document.getElementById('video');
+const container     = document.getElementById('video-container');
+const overlay       = document.getElementById('overlay');
+const statusEl      = document.getElementById('status');
+const liveBadge     = document.getElementById('live-badge');
+const reloadBtn     = document.getElementById('reload-btn');
+const unmuteBtn     = document.getElementById('unmute-btn');
+const modeBtn       = document.getElementById('mode-btn');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+const pipBtn        = document.getElementById('pip-btn');
+
+let currentCh=null, hls=null, hlsAudio=null, hideTimeout=null, tokenRefreshTimer=null;
+let userPaused=false, audioOnly=false, userUnmuted=false, isExpanded=false, wakeLockSentinel=null;
+
+reloadBtn.textContent     = t.reconnect;
+unmuteBtn.textContent     = t.unmute;
+modeBtn.textContent       = t.audioMode;
+fullscreenBtn.textContent = t.fullscreen;
+
+// ── Утилиты ────────────────────────────────────────────────────────────────
+function setStatus(key, isError) {
+  const msg = t[key] || key;
+  statusEl.innerHTML = isError ? '⚠️ '+msg : '<span class="dot"></span>'+msg;
+  reloadBtn.style.display = isError ? 'block' : 'none';
+}
+function enforceMute() { if (!userUnmuted) video.muted = true; }
+function setAudioMode(on) {
+  audioOnly = !!on;
+  document.body.classList.toggle('audio-only', audioOnly);
+  modeBtn.textContent = audioOnly ? t.videoMode : t.audioMode;
+  if (audioOnly) { overlay.classList.remove('hidden'); if (hideTimeout) clearTimeout(hideTimeout); }
+}
+function showUI() {
+  overlay.classList.remove('hidden');
+  if (hideTimeout) clearTimeout(hideTimeout);
+  if (isExpanded && !audioOnly) hideTimeout = setTimeout(() => overlay.classList.add('hidden'), 4000);
+}
+
+// ── Fullscreen ─────────────────────────────────────────────────────────────
+function enterFs() {
+  if (video.webkitEnterFullscreen && isIOS()) {
+    video.webkitEnterFullscreen();
+    isExpanded = true; fullscreenBtn.textContent = t.exitFs; return;
+  }
+  try { if (tg?.requestFullscreen) tg.requestFullscreen(); } catch(e) {}
+  if (container.requestFullscreen) {
+    container.requestFullscreen()
+      .then(() => { container.classList.remove('css-fs'); document.body.style.overflow=''; })
+      .catch(() => { container.classList.add('css-fs'); document.body.style.overflow='hidden'; });
+  } else if (container.webkitRequestFullscreen) {
+    container.webkitRequestFullscreen();
+  } else {
+    container.classList.add('css-fs'); document.body.style.overflow='hidden';
+  }
+  isExpanded = true; fullscreenBtn.textContent = t.exitFs;
+}
+function exitFs() {
+  try { if(document.exitFullscreen) document.exitFullscreen(); else if(document.webkitExitFullscreen) document.webkitExitFullscreen(); } catch(e) {}
+  container.classList.remove('css-fs'); document.body.style.overflow='';
+  isExpanded = false; fullscreenBtn.textContent = t.fullscreen;
+  overlay.classList.remove('hidden');
+  if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout=null; }
+}
+fullscreenBtn.onclick = () => isExpanded ? exitFs() : enterFs();
+
+function onFsChange() {
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  if (fsEl) {
+    isExpanded = true; fullscreenBtn.textContent = t.exitFs;
+    overlay.classList.remove('hidden');
+    if (hideTimeout) clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => overlay.classList.add('hidden'), 3000);
+    video.style.objectFit = window.innerWidth > window.innerHeight ? 'cover' : 'contain';
+  } else {
+    isExpanded = false; fullscreenBtn.textContent = t.fullscreen;
+    overlay.classList.remove('hidden');
+    if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout=null; }
+    video.style.objectFit = 'contain';
+    if (!userUnmuted) video.muted = true;
+  }
+}
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
+
+video.addEventListener('webkitendfullscreen', async () => {
+  isExpanded = false; fullscreenBtn.textContent = t.fullscreen;
+  overlay.classList.remove('hidden');
+  setTimeout(() => { if (currentCh) { stopStream(); init(); } }, 300);
+});
+
+// ── Жесты ──────────────────────────────────────────────────────────────────
+let lastTap = 0;
+container.addEventListener('pointerup', e => {
+  if (e.target.closest('button')) return;
+  const now = Date.now();
+  if (now-lastTap < 280) { isExpanded ? exitFs() : enterFs(); lastTap=0; return; }
+  lastTap = now;
+  setTimeout(() => { if (Date.now()-lastTap >= 270) showUI(); }, 290);
+});
+container.addEventListener('pointermove', () => { if (isExpanded) showUI(); });
+container.addEventListener('touchstart', () => { if (isExpanded) showUI(); }, { passive:true });
+
+// ── PiP (только PC) ────────────────────────────────────────────────────────
+if (!isIOS() && !isAndroid()) pipBtn.style.display = 'block';
+pipBtn.textContent = '🎥 PiP';
+pipBtn.onclick = async () => {
+  try {
+    if (document.pictureInPictureElement) { await document.exitPictureInPicture(); pipBtn.textContent='🎥 PiP'; }
+    else if (!isIOS() && video.requestPictureInPicture) { await video.requestPictureInPicture(); pipBtn.textContent='✕ PiP'; }
+  } catch(e) {}
+};
+video.addEventListener('leavepictureinpicture', async () => {
+  pipBtn.textContent='🎥 PiP'; userUnmuted=false; video.muted=true;
+  if (video.paused) { try { await video.play(); } catch(e) {} }
+});
+
+// ── Wake Lock ───────────────────────────────────────────────────────────────
+async function requestWakeLock() {
+  try { if (!isIOS() && 'wakeLock' in navigator && !wakeLockSentinel) wakeLockSentinel=await navigator.wakeLock.request('screen'); } catch(e) {}
+}
+
+// ── Media Session ───────────────────────────────────────────────────────────
+function setupMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  const name = currentCh ? currentCh.name : 'Korea TV';
+  navigator.mediaSession.metadata = new MediaMetadata({ title:name, artist:'LIVE 🔴', album:'Korea TV Live' });
+  navigator.mediaSession.playbackState = 'playing';
+  navigator.mediaSession.setActionHandler('play', async () => { try { await video.play(); } catch(e) {} });
+  navigator.mediaSession.setActionHandler('pause', () => { video.pause(); });
+}
+
+// ── Фоновое воспроизведение ─────────────────────────────────────────────────
+let pauseByUser = false;
+video.addEventListener('mousedown', () => { pauseByUser=true; });
+video.addEventListener('touchstart', () => { pauseByUser=true; }, { passive:true });
+video.addEventListener('pause', () => {
+  if (isIOS() || (isAndroid() && pauseByUser)) userPaused=true;
+  pauseByUser=false;
+});
+video.addEventListener('play', () => {
+  if (!userUnmuted) video.muted=true;
+  userPaused=false;
+  if (isAndroid()) { const a=document.getElementById('audio-bg'); if(a) a.muted=true; }
+});
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState==='hidden') {
+    if (isIOS() || userPaused) return;
+    setTimeout(async () => {
+      if (video.paused) { try { await video.play(); } catch(e) {} }
+      const a=document.getElementById('audio-bg');
+      if (isAndroid() && a) { a.muted=false; if(a.paused){try{await a.play();}catch(e){}} video.muted=true; }
+    }, 300);
+  } else {
+    enforceMute();
+    if (isAndroid()) { const a=document.getElementById('audio-bg'); if(a) a.muted=true; }
+    if (!userPaused && video.paused) {
+      try { await video.play(); } catch(e) { if(currentCh){stopStream();init();} }
+    } else if (!userPaused && video.readyState<2) {
+      if (currentCh) { stopStream(); init(); }
+    }
+  }
+});
+window.addEventListener('pageshow', async () => {
+  if (!userPaused && video.paused) { try { await video.play(); } catch(e) {} }
+});
+
+// ── Поток ──────────────────────────────────────────────────────────────────
+function stopStream() {
+  if (hls) { hls.destroy(); hls=null; }
+  if (hlsAudio) { hlsAudio.destroy(); hlsAudio=null; }
+  if (tokenRefreshTimer) { clearInterval(tokenRefreshTimer); tokenRefreshTimer=null; }
+  video.src=''; liveBadge.style.display='none'; liveBadgeTop.style.display='none';
+  if (wakeLockSentinel) { wakeLockSentinel.release().catch(()=>{}); wakeLockSentinel=null; }
+}
+
+function loadStream(url) {
+  if (!currentCh) return;
+  userUnmuted=false;
+  const streamUrl = url;
+  stopStream(); setStatus('connecting'); unmuteBtn.style.display='none';
+
+  if (isAndroid()) {
+    const audioBg = document.getElementById('audio-bg');
+    if (audioBg && Hls.isSupported()) {
+      hlsAudio = new Hls({ liveSyncDurationCount:3, enableWorker:true });
+      hlsAudio.loadSource(streamUrl); hlsAudio.attachMedia(audioBg);
+      hlsAudio.on(Hls.Events.MANIFEST_PARSED, () => { audioBg.muted=true; audioBg.play().catch(()=>{}); });
+    }
+  }
+
+  video.muted=true;
+  if (Hls.isSupported()) {
+    hls = new Hls({ liveSyncDurationCount:3, lowLatencyMode:true, enableWorker:true, backBufferLength:30 });
+    hls.loadSource(streamUrl); hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, async () => {
+      setStatus('live'); liveBadge.style.display='flex'; liveBadgeTop.style.display='inline';
+      try {
+        if (!userUnmuted) video.muted=true;
+        await video.play();
+        unmuteBtn.style.display = audioOnly ? 'none' : 'block';
+        setupMediaSession();
+        if (!isIOS()) requestWakeLock();
+      } catch(e) { setStatus('pressPlay'); }
+    });
+    hls.on(Hls.Events.ERROR, (e, data) => {
+      if (!data.fatal) return;
+      if (data.type===Hls.ErrorTypes.NETWORK_ERROR) { try{hls.startLoad();}catch(err){} return; }
+      if (data.type===Hls.ErrorTypes.MEDIA_ERROR)   { try{hls.recoverMediaError();}catch(err){} return; }
+      setStatus('errorStream', true); setTimeout(() => init(), 5000);
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src=streamUrl; setStatus('live'); liveBadge.style.display='flex'; liveBadgeTop.style.display='inline';
+    video.play()
+      .then(() => { unmuteBtn.style.display=audioOnly?'none':'block'; setupMediaSession(); if(!isIOS())requestWakeLock(); })
+      .catch(() => setStatus('pressPlay'));
+  }
+
+  tokenRefreshTimer = setInterval(async () => {
+    if (!currentCh) return;
+    try {
+      const r = await fetch(currentCh.stream + (currentCh.stream.includes('?')?'&':'?') + 't=' + Date.now(), { cache:'no-store' });
+      const ct = r.headers.get('Content-Type') || '';
+      if (!ct.includes('mpegurl') && !ct.includes('m3u')) {
+        const d = await r.json();
+        if (d.url) {
+          if (hls) hls.loadSource(d.url);
+          if (hlsAudio) hlsAudio.loadSource(d.url);
+        }
+      }
+    } catch(e) {}
+  }, 20 * 60 * 1000);
+}
+
+async function init() {
+  if (!currentCh) return;
+  setStatus('loading'); reloadBtn.style.display='none'; unmuteBtn.style.display='none';
+  try {
+    const sep = currentCh.stream.includes('?') ? '&' : '?';
+    const r = await fetch(currentCh.stream + sep + 't=' + Date.now(), { cache:'no-store' });
+    const ct = r.headers.get('Content-Type') || '';
+    if (ct.includes('mpegurl') || ct.includes('m3u')) {
+      loadStream(currentCh.stream);
+    } else {
+      const d = await r.json();
+      if (d.url) loadStream(d.url); else setStatus('errorUrl', true);
+    }
+  } catch(e) { setStatus('errorServer', true); }
+}
+
+// ── Кнопки ─────────────────────────────────────────────────────────────────
+reloadBtn.onclick = () => { userPaused=false; init(); };
+unmuteBtn.onclick = () => {
+  const ab = document.getElementById('audio-bg');
+  if (video.muted) {
+    video.muted=false; video.volume=1; userUnmuted=true;
+    unmuteBtn.textContent = '🔇 '+t.mute;
+    if (ab) { ab.muted=true; ab.pause(); }
+  } else {
+    video.muted=true; userUnmuted=false;
+    unmuteBtn.textContent = '🔊 '+t.unmute;
+    if (ab && isIOS()) { ab.muted=false; ab.volume=0; ab.play().catch(()=>{}); }
+  }
+};
+modeBtn.onclick = () => setAudioMode(!audioOnly);
+
+// ── Хаб ───────────────────────────────────────────────────────────────────
+function buildHub() {
+  channelsGrid.innerHTML = '';
+  CHANNEL_GROUPS.forEach(group => {
+    const header = document.createElement('div');
+    header.className = 'category-header';
+    header.textContent = group.label;
+    channelsGrid.appendChild(header);
+
+    group.channels.forEach(ch => {
+      const card = document.createElement('div');
+      card.className = 'channel-card';
+      card.style.setProperty('--ch-color', ch.color);
+      card.innerHTML = `
+        <div class="ch-icon" style="background:${ch.iconBg};color:${ch.color}">${ch.icon}</div>
+        <div class="ch-info">
+          <div class="ch-name">${ch.name}</div>
+          <div class="ch-desc">${ch.desc}</div>
+        </div>
+        <div class="live-dot"></div>`;
+      card.onclick = () => openChannel(ch);
+      channelsGrid.appendChild(card);
+    });
+  });
+}
+
+function openChannel(ch) {
+  currentCh = ch;
+  hubScreen.style.display = 'none';
+  playerScreen.style.display = 'flex';
+  chTitle.textContent = ch.name;
+  liveBadgeTop.style.background = ch.color;
+  liveBadge.style.background = ch.color;
+  audioOnly = false; document.body.classList.remove('audio-only');
+  modeBtn.textContent = t.audioMode;
+  stopStream(); init();
+}
+
+function goToHub() {
+  stopStream();
+  playerScreen.style.display = 'none';
+  hubScreen.style.display = 'flex';
+  currentCh = null;
+}
+
+backBtn.onclick = () => goToHub();
+
+buildHub();
+</script>
+</body>
+</html>
