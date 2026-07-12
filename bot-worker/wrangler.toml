@@ -1,3 +1,4 @@
 name = "korea-bot-worker"
 main = "korea-bot-worker.js"
 compatibility_date = "2024-01-01"
+# trigger build
