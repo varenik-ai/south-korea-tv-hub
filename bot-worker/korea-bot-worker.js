@@ -61,42 +61,43 @@ const btnBrowser = {
   en: '🌐 Open in browser',
 };
 
-const POST_TEXT = `🇰🇷 *KOREA·TV — 36 КАНАЛОВ В ПРЯМОМ ЭФИРЕ* 🔴
+const POST_TEXT = `🇰🇷 *KOREA·TV — 실시간 채널 36개* 🔴
 
-Смотрите южнокорейское телевидение прямо в Telegram — *бесплатно, без VPN, без регистрации, 24/7.*
+한국 방송을 텔레그램에서 무료로 시청하세요 — *VPN 불필요, 가입 불필요, 24/7.*
 
 ━━━━━━━━━━━━━━━━━━━━
-🌏 *МЕЖДУНАРОДНЫЕ*
-▪️ Arirang TV · Arirang Radio
-
-📡 *ЭФИРНЫЕ*
-▪️ SBS
-
-📚 *EBS*
-▪️ EBS 1TV · EBS 2TV · EBS Plus1 · EBS Plus2 · EBS Kids · EBS English
-
-🏛️ *ОБЩЕСТВЕННЫЕ*
-▪️ KTV · Gugak TV · OUN · NBS
-
-📍 *РЕГИОНАЛЬНЫЕ*
-▪️ MBC Jeju · SBS KBC · SBS UBC · TBS Seoul · MBC Chuncheon · MBC Daejeon · MBC Chungbuk · OBS Gyeonggi · NHTV · NIB · JJCTV · KCN
-
-🏛️ *ГОСУДАРСТВЕННЫЕ*
-▪️ National Assembly TV
-
-📈 *ЭКОНОМИКА · ШОПИНГ*
-▪️ WOWTV · MK Money · KT Alpha Shopping
-
-⛪ *ПРОЧИЕ*
-▪️ BTN TV · GoodTV · ABN TV · FGTV · RUTC TV
-
-🎵 *МУЗЫКА · РАДИО*
-▪️ TBS eFM · TBS FM
+🌏 *국제* — Arirang TV · Arirang Radio
+📡 *지상파* — SBS
+📚 *EBS* — 1TV · 2TV · Plus1 · Plus2 · Kids · English
+🏛️ *공영·정책* — KTV · 국악방송 · 방송대학TV · 농수산방송
+📍 *지역* — 제주MBC · 광주KBC · 울산UBC · 교통방송TBS · 춘천MBC · 대전MBC · 충북MBC · OBS경인TV · NHTV · 남인천방송 · 지방자치TV · 금강방송
+🏛️ *국가기관* — 국회방송
+📈 *경제·쇼핑* — 한국경제TV · 매일경제TV · KT알파쇼핑
+⛪ *종교·기타* — BTN · GoodTV · ABN · FGTV · RUTC
+🎵 *음악·라디오* — TBS eFM · TBS FM
 ━━━━━━━━━━━━━━━━━━━━
 
 ✅ HD · iOS · Android · Desktop
 
-👇 *Нажмите кнопку и выберите канал:*`;
+👇 *아래 버튼을 눌러 채널을 선택하세요*
+
+━━━━━━━━━━━━━━━━━━━━
+
+🇬🇧 *KOREA·TV — 36 live channels* 🔴
+
+Watch South Korean TV free on Telegram — *no VPN, no registration, 24/7.*
+
+🌏 *International* — Arirang TV, Arirang Radio
+📡 *National* — SBS
+📚 *EBS* — 1TV, 2TV, Plus1, Plus2, Kids, English
+🏛️ *Public* — KTV, Gugak TV, OUN, NBS
+📍 *Regional* — MBC Jeju, SBS KBC, SBS UBC, TBS Seoul, MBC Chuncheon, MBC Daejeon, MBC Chungbuk, OBS Gyeonggi, NHTV, NIB, JJCTV, KCN
+🏛️ *Government* — National Assembly TV
+📈 *Business/Shopping* — WOWTV, MK Money, KT Alpha Shopping
+⛪ *Religious/Other* — BTN, GoodTV, ABN, FGTV, RUTC
+🎵 *Music/Radio* — TBS eFM, TBS FM
+
+👇 *Tap the button below to pick a channel*`;
 
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request));
