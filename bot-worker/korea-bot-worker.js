@@ -1,11 +1,13 @@
 // korea-bot-worker.js — Cloudflare Worker, обрабатывает Telegram webhook вместо nohup node bot.js.
 // Работает 24/7 на инфраструктуре Cloudflare, полностью независимо от локального компьютера.
+// Деплой: создать Worker "korea-bot-worker" в Cloudflare dashboard, вставить этот код, Deploy.
 // После деплоя один раз открыть https://<worker-url>/set-webhook для регистрации webhook.
 
 const TOKEN   = '8917618978:AAHm5EtmOHlbPbZixKnKxUmK-3Sv5P8Z8AY'; // @KoreaTVHub_bot
 const CHANNEL = -1003991519999;                                   // Korea TV Hub 🇰🇷 | Live Channels
 const APP_URL = 'https://t.me/KoreaTVHub_bot/koreatv';
 const WEB_URL = 'https://varenik-ai.github.io/south-korea-tv-hub/?v=1';
+const SITE_URL = 'https://korea-tv.uk/';
 
 const API = `https://api.telegram.org/bot${TOKEN}`;
 
@@ -59,6 +61,11 @@ const btnWatch = {
 const btnBrowser = {
   ko: '🌐 브라우저에서 열기',
   en: '🌐 Open in browser',
+};
+
+const btnSite = {
+  ko: '📰 채널 정보 · korea-tv.uk',
+  en: '📰 Channel guide · korea-tv.uk',
 };
 
 const POST_TEXT = `🇰🇷 *KOREA·TV — 실시간 채널 36개* 🔴
@@ -115,6 +122,7 @@ async function tg(method, payload) {
 async function handleRequest(request) {
   const url = new URL(request.url);
 
+  // Служебный эндпоинт: зарегистрировать/проверить webhook. Вызывать один раз после деплоя.
   if (url.pathname === '/set-webhook') {
     const r = await tg('setWebhook', { url: url.origin });
     return new Response(JSON.stringify(r), { headers: { 'Content-Type': 'application/json' } });
@@ -152,6 +160,7 @@ async function handleRequest(request) {
         inline_keyboard: [
           [{ text: btnWatch[lang] || btnWatch.ko, web_app: { url: WEB_URL } }],
           [{ text: btnBrowser[lang] || btnBrowser.ko, url: WEB_URL }],
+          [{ text: btnSite[lang] || btnSite.ko, url: SITE_URL }],
         ],
       },
     });
@@ -161,7 +170,10 @@ async function handleRequest(request) {
         chat_id: CHANNEL,
         text: POST_TEXT,
         parse_mode: 'Markdown',
-        reply_markup: { inline_keyboard: [[{ text: '📺 Open Korea TV Live', url: APP_URL }]] },
+        reply_markup: { inline_keyboard: [
+          [{ text: '📺 Open Korea TV Live', url: APP_URL }],
+          [{ text: '📰 채널 가이드 · Guide · korea-tv.uk', url: SITE_URL }],
+        ] },
       });
       if (post.ok) {
         await tg('pinChatMessage', { chat_id: CHANNEL, message_id: post.result.message_id });
