@@ -2,7 +2,14 @@
 // Клон структуры russia-worker.js (github.com/varenik-ai/russia-tv-hub)
 // Деплой: cd ~/korea-worker && cp ~/south-korea-tv-hub/korea-worker.js src/index.js && npx wrangler deploy
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
+
+// ── Защита прокси ────────────────────────────────────────────────────────────
+// Секрет PROXY_SECRET задаётся в настройках воркера (не в коде, репозиторий публичный):
+//   npx wrangler secret put PROXY_SECRET
+// Каждый адрес, который воркер вставляет в плейлист, подписывается HMAC-SHA256.
+// /proxy принимает только подписанные адреса, поэтому через воркер нельзя
+// скачать произвольный URL. /debug?url=... требует ?key=<PROXY_SECRET>.
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,7 +23,9 @@ const CORS = {
 // hujingguang/ChinaIPTV, iptv-org/iptv, Free-TV/IPTV, MyeongJun-Park/iptv
 // (все открытые GitHub-плейлисты).
 //
-// Из ~100 проверенных кандидатов рабочими подтвердились эти 36. GCN (по
+// Из ~100 проверенных кандидатов рабочими подтвердились 36; 2026-11-08 убраны
+// переставшие отвечать MBC Chungbuk (403), GoodTV (522) и National Assembly TV (404), а также SBS и OBS Gyeongin
+// (зеркало allanf181 ссылается на seezntv.com, домен больше не резолвится — CF error 1016). Осталось 31. GCN (по
 // просьбе пользователя) удалён — легитимность организации-владельца
 // сомнительна. SBS/OBS через community-зеркало allanf181/adaptive-streams —
 // см. README_DEPLOY.md для деталей. Музыкальные каналы: попытка найти
@@ -52,19 +61,13 @@ const STREAMS = {
   nbs:   'https://media.joycorp.co.kr:4443/live/ngrp:live_all/playlist.m3u8',
   tbs:   'https://cdntv.tbs.seoul.kr/tbs/tbs_tv_web.smil/playlist.m3u8',
 
-  // ── Национальное вещание ──────────────────────────────────────────
-  sbs: 'https://allanf181.github.io/adaptive-streams/streams/kr/SBSTV.m3u8',
-
   // ── Региональные MBC/SBS-филиалы ───────────────────────────────────
   mbc_jeju:      'https://wowza.jejumbc.com/live/tv_jejumbc/playlist.m3u8',
-  mbc_chungbuk:  'http://211.33.246.4:32954/cj_live/myStream.sdp/playlist.m3u8',
   sbs_kbc:  'https://vod.ikbc.co.kr/KBCTV/tv/playlist.m3u8',
   sbs_ubc:  'https://stream.ubc.co.kr/hls/ubctvstream/index.m3u8',
-  obs_gyeonggi: 'https://allanf181.github.io/adaptive-streams/streams/kr/OBSGyeonginTV.m3u8',
 
   // ── Религиозные / нишевые ──────────────────────────────────────────
   btn:    'https://btn.nowcdn.co.kr/btn/btnlive2m/playlist.m3u8',
-  goodtv: 'http://mobliestream.c3tv.com:1935/live/goodtv.sdp/playlist.m3u8',
   abn:    'https://vod2.abn.co.kr/IPHONE/abn.m3u8',
   fgtv:   'https://fgtvlive.fgtv.com/smil:fgtv.smil/playlist.m3u8',
   rutc:   'http://d26sxnc75smwvh.cloudfront.net/livehttporigin/rutclive_720p2.stream/playlist.m3u8',
@@ -76,9 +79,6 @@ const STREAMS = {
   nib:           'http://stream.nibtv.co.kr:1935/live/nib/playlist.m3u8',
   jjctv:         'https://jjctv.ecn.cdn.infralab.net/jjctv/live/playlist.m3u8',
   kcn:           'http://62db982017b54.streamlock.net:1935/live/_definst_/tv.stream/playlist.m3u8',
-
-  // ── Государственные (доп.) ────────────────────────────────────────
-  natv: 'https://m.webcast.go.kr/live/_definst_/smil:natv_720p.smil/playlist.m3u8',
 
   // ── Экономические / деловые ────────────────────────────────────────
   wowtv:  'http://cdnmlive.wowtv.co.kr/wowmo/livestream/playlist.m3u8',
@@ -114,6 +114,9 @@ async function handleRequest(request) {
         headers: { ...CORS, 'Content-Type': 'application/json' },
       });
     }
+    if (!proxySecret()) {
+      return new Response('Proxy is not configured', { status: 503, headers: CORS });
+    }
     return fetchM3u8(streamUrl, url.origin);
   }
 
@@ -122,6 +125,12 @@ async function handleRequest(request) {
     const target = url.searchParams.get('url');
     if (!target) {
       return new Response('Missing url param', { status: 400, headers: CORS });
+    }
+    if (!proxySecret()) {
+      return new Response('Proxy is not configured', { status: 503, headers: CORS });
+    }
+    if (!/^https?:\/\//i.test(target) || !safeEqual(url.searchParams.get('s') || '', await sign(target))) {
+      return new Response('Forbidden', { status: 403, headers: CORS });
     }
     return proxyTarget(target, url.origin);
   }
@@ -133,6 +142,9 @@ async function handleRequest(request) {
       return new Response(JSON.stringify({ channels: Object.keys(STREAMS), version: VERSION }), {
         headers: { ...CORS, 'Content-Type': 'application/json' },
       });
+    }
+    if (!proxySecret() || !safeEqual(url.searchParams.get('key') || '', proxySecret())) {
+      return new Response('Forbidden', { status: 403, headers: CORS });
     }
     try {
       const res = await fetch(target, { headers: { 'User-Agent': UA }, cf: { cacheEverything: false, cacheTtl: -1 } });
@@ -162,6 +174,37 @@ async function handleRequest(request) {
 // ── User-Agent для запросов к CDN ────────────────────────────────────────────
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
+// ── HMAC-подпись адресов для /proxy ─────────────────────────────────────────
+let _keyPromise = null;
+function proxySecret() {
+  return typeof PROXY_SECRET === 'string' ? PROXY_SECRET : '';
+}
+function hmacKey() {
+  if (!_keyPromise) {
+    _keyPromise = crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(proxySecret()),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+    );
+  }
+  return _keyPromise;
+}
+async function sign(target) {
+  const mac = await crypto.subtle.sign('HMAC', await hmacKey(), new TextEncoder().encode(target));
+  const bytes = new Uint8Array(mac).slice(0, 16);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+async function proxyLink(abs, workerOrigin) {
+  return `${workerOrigin}/proxy?url=${encodeURIComponent(abs)}&s=${await sign(abs)}`;
+}
+
 // ── Разрешить относительный URL относительно базового ───────────────────────
 function resolveUrl(base, relative) {
   if (!relative) return base;
@@ -179,7 +222,7 @@ function baseDir(url) {
 }
 
 // ── Перезаписать m3u8: все URL → /proxy?url=... ──────────────────────────────
-function rewriteM3u8(content, sourceUrl, workerOrigin) {
+async function rewriteM3u8(content, sourceUrl, workerOrigin) {
   const base = baseDir(sourceUrl);
   const lines = content.split('\n');
   const out = [];
@@ -190,17 +233,18 @@ function rewriteM3u8(content, sourceUrl, workerOrigin) {
     if (line.startsWith('#EXT-X-MEDIA') && line.includes('TYPE=SUBTITLES')) continue;
 
     if (line === '' || line.startsWith('#')) {
-      let fixed = line.replace(/URI="([^"]+)"/g, (_, uri) => {
-        const abs = resolveUrl(base, uri);
-        return `URI="${workerOrigin}/proxy?url=${encodeURIComponent(abs)}"`;
-      });
+      let fixed = line;
+      for (const m of line.matchAll(/URI="([^"]+)"/g)) {
+        const abs = resolveUrl(base, m[1]);
+        fixed = fixed.replace(m[0], `URI="${await proxyLink(abs, workerOrigin)}"`);
+      }
       if (fixed.startsWith('#EXT-X-STREAM-INF')) {
         fixed = fixed.replace(/,?SUBTITLES="[^"]*"/, '');
       }
       out.push(fixed);
     } else {
       const abs = resolveUrl(base, line);
-      out.push(`${workerOrigin}/proxy?url=${encodeURIComponent(abs)}`);
+      out.push(await proxyLink(abs, workerOrigin));
     }
   }
 
@@ -232,7 +276,7 @@ async function fetchM3u8(streamUrl, workerOrigin) {
   }
 
   const body = await res.text();
-  const rewritten = rewriteM3u8(body, streamUrl, workerOrigin);
+  const rewritten = await rewriteM3u8(body, streamUrl, workerOrigin);
 
   return new Response(rewritten, {
     headers: {
@@ -271,7 +315,7 @@ async function proxyTarget(targetUrl, workerOrigin) {
 
   if (isM3u8) {
     const body = await res.text();
-    const rewritten = rewriteM3u8(body, targetUrl, workerOrigin);
+    const rewritten = await rewriteM3u8(body, targetUrl, workerOrigin);
     return new Response(rewritten, {
       headers: {
         ...CORS,
