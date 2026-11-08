@@ -371,7 +371,8 @@ function initQuality(h) {
   const lab = l => { const mb = l.bitrate ? l.bitrate / 1e6 : 0; return l.height ? l.height + 'p' : (mb ? (mb >= 10 ? mb.toFixed(0) : mb.toFixed(1)) + ' ' + X.m : ''); };
   const apply = () => {
     const p = get(), lv = h.levels || [];
-    if (p === 'auto' || !lv.length) { h.currentLevel = -1; return; }
+    // Korea: на «Авто» не трогаем уровень, если ABR и так включён — присваивание currentLevel в hls.js 1.5 обрывает начатую загрузку фрагмента (медленный старт на KT알파쇼핑)
+    if (p === 'auto' || !lv.length) { if (!h.autoLevelEnabled) h.currentLevel = -1; return; }
     let idx = -1;
     if (p[0] === 'b') { const w = parseInt(p.slice(1), 10) * 1000; let d = 1e12; lv.forEach((l, i) => { const x = Math.abs((l.bitrate || 0) - w); if (x < d) { d = x; idx = i; } }); }
     else { const w = parseInt(p, 10); let bh = -1; lv.forEach((l, i) => { const hh = l.height || 0; if (hh <= w && hh > bh) { bh = hh; idx = i; } }); }
