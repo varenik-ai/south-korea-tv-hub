@@ -109,9 +109,15 @@ addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request));
 });
 
-// Секреты в синтаксисе Service Worker доступны как глобальные переменные.
+// Секреты в синтаксисе Service Worker доступны как глобальные переменные
+// (через globalThis они не видны, поэтому обращаемся по имени).
 function secret(name) {
-  return typeof globalThis[name] === 'string' ? globalThis[name] : '';
+  switch (name) {
+    case 'BOT_TOKEN':      return typeof BOT_TOKEN === 'string' ? BOT_TOKEN : '';
+    case 'WEBHOOK_SECRET': return typeof WEBHOOK_SECRET === 'string' ? WEBHOOK_SECRET : '';
+    case 'ADMIN_IDS':      return typeof ADMIN_IDS === 'string' ? ADMIN_IDS : '';
+    default: return '';
+  }
 }
 
 function adminIds() {
@@ -141,21 +147,21 @@ async function tg(method, payload) {
 
 async function handleRequest(request) {
   const url = new URL(request.url);
-  const WEBHOOK_SECRET = secret('WEBHOOK_SECRET');
+  const whSecret = secret('WEBHOOK_SECRET');
 
-  if (!secret('BOT_TOKEN') || !WEBHOOK_SECRET) {
+  if (!secret('BOT_TOKEN') || !whSecret) {
     return json({ ok: false, error: 'BOT_TOKEN / WEBHOOK_SECRET are not configured' }, 500);
   }
 
   // Служебные адреса — только с ?key=<WEBHOOK_SECRET>.
   if (url.pathname === '/set-webhook' || url.pathname === '/webhook-info') {
-    if (!safeEqual(url.searchParams.get('key') || '', WEBHOOK_SECRET)) {
+    if (!safeEqual(url.searchParams.get('key') || '', whSecret)) {
       return new Response('Forbidden', { status: 403 });
     }
     const r = url.pathname === '/set-webhook'
       ? await tg('setWebhook', {
           url: url.origin + '/',
-          secret_token: WEBHOOK_SECRET,
+          secret_token: whSecret,
           allowed_updates: ['message'],
           drop_pending_updates: true,
         })
@@ -168,7 +174,7 @@ async function handleRequest(request) {
   }
 
   // Принимаем апдейты только от Telegram (он присылает secret_token в заголовке).
-  if (!safeEqual(request.headers.get('X-Telegram-Bot-Api-Secret-Token') || '', WEBHOOK_SECRET)) {
+  if (!safeEqual(request.headers.get('X-Telegram-Bot-Api-Secret-Token') || '', whSecret)) {
     return new Response('Forbidden', { status: 403 });
   }
 
