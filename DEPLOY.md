@@ -1,6 +1,6 @@
 # Деплой и секреты
 
-Актуально на **8 ноября 2026**. Что работает и что нельзя ломать — `ETALON.md`.
+Актуально на **9 ноября 2026**. Что работает и что нельзя ломать — `ETALON.md`, бот — `BOT.md`, каналы — `ADD_CHANNEL.md`.
 
 ## Как всё выкатывается
 | Что | Откуда | Как обновляется |
@@ -10,7 +10,7 @@
 | Бот `korea-bot-worker` (`bot-worker/`) | `main` | так же, Workers Builds |
 | Сайт korea-tv.uk | репозиторий `varenik-ai/korea-tv-uk-website` | GitHub Pages |
 
-Проверка версии воркера: `https://korea-worker.dyaltd.workers.dev/version` (сейчас `1.6.0`, `mode: hybrid`).
+Проверка версии воркера: `https://korea-worker.dyaltd.workers.dev/version` (сейчас `1.7.0`, `mode: hybrid`, `channels: 39`, `direct: 29`).
 
 ## Секреты (только в Cloudflare, никогда в репозитории — он публичный)
 Cloudflare → Workers & Pages → воркер → Settings → Variables and Secrets (тип Secret), после изменения — Deploy.

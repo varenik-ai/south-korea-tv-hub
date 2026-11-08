@@ -1,6 +1,6 @@
 // korea-worker.js — CF Worker для South Korea TV Hub
 // Клон структуры russia-worker.js (github.com/varenik-ai/russia-tv-hub)
-// Деплой: cd ~/korea-worker && cp ~/south-korea-tv-hub/korea-worker.js src/index.js && npx wrangler deploy
+// Деплой: push в main — Cloudflare Workers Builds выкатывает сам (см. DEPLOY.md). Секрет PROXY_SECRET — только в Cloudflare.
 
 const VERSION = '1.7.0';
 
