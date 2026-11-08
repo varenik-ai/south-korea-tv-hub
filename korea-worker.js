@@ -2,7 +2,7 @@
 // Клон структуры russia-worker.js (github.com/varenik-ai/russia-tv-hub)
 // Деплой: cd ~/korea-worker && cp ~/south-korea-tv-hub/korea-worker.js src/index.js && npx wrangler deploy
 
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 
 // ── Защита прокси ────────────────────────────────────────────────────────────
 // Секрет PROXY_SECRET задаётся в настройках воркера (не в коде, репозиторий публичный):
@@ -70,7 +70,7 @@ const STREAMS = {
   btn:    'https://btn.nowcdn.co.kr/btn/btnlive2m/playlist.m3u8',
   abn:    'https://vod2.abn.co.kr/IPHONE/abn.m3u8',
   fgtv:   'https://fgtvlive.fgtv.com/smil:fgtv.smil/playlist.m3u8',
-  rutc:   'http://d26sxnc75smwvh.cloudfront.net/livehttporigin/rutclive_720p2.stream/playlist.m3u8',
+  rutc:   'https://d26sxnc75smwvh.cloudfront.net/livehttporigin/rutclive_720p2.stream/playlist.m3u8',
 
   // ── Прочие региональные/отраслевые ──────────────────────────────────
   nhtv:          'http://nonghyup.flive.skcdn.com/nonghyup/_definst_/nhlive/playlist.m3u8',
@@ -81,7 +81,7 @@ const STREAMS = {
   kcn:           'http://62db982017b54.streamlock.net:1935/live/_definst_/tv.stream/playlist.m3u8',
 
   // ── Экономические / деловые ────────────────────────────────────────
-  wowtv:  'http://cdnmlive.wowtv.co.kr/wowmo/livestream/playlist.m3u8',
+  wowtv:  'https://cdnmlive.wowtv.co.kr/wowmo/livestream/playlist.m3u8',
   mkmoney:'http://mmoney.flive.skcdn.com/mmoneymobile/smil:money.smil/playlist.m3u8',
 
   // ── Шопинг ────────────────────────────────────────────────────────
@@ -91,6 +91,24 @@ const STREAMS = {
   tbs_efm: 'https://cdntv.tbs.seoul.kr/tbs/tbs_efm_web.smil/playlist.m3u8',
   tbs_fm:  'https://cdntv.tbs.seoul.kr/tbs/tbs_fm_web.smil/playlist.m3u8',
 };
+
+// ── Гибридный режим (v1.6.0) ────────────────────────────────────────────────
+// Как у Russia TV («только плейлисты»): у каналов из DIRECT плейлисты идут через
+// воркер, а видеосегменты (.ts/.aac/.mp4/.m4s) браузер берёт прямо у источника.
+// Условие для DIRECT: плейлист и сегменты по https с Access-Control-Allow-Origin
+// (проверено 2026-11-08). Остальные каналы (источник только по http, браузер на
+// https-странице такие сегменты заблокирует) идут через подписанный /proxy, как раньше.
+// Если в плейлисте DIRECT-канала сегмент окажется по http, он тоже пойдёт через /proxy.
+const DIRECT = new Set([
+  'arirang', 'ebs1', 'ebs2', 'ebs_plus1', 'ebs_plus2', 'ebs_kids', 'ebs_english',
+  'ktv', 'gugak', 'oun', 'nbs', 'tbs', 'tbs_efm', 'tbs_fm',
+  'mbc_jeju', 'mbc_chuncheon', 'mbc_daejeon', 'sbs_kbc',
+  'btn', 'abn', 'fgtv', 'rutc', 'jjctv', 'wowtv', 'ktalpha',
+]);
+
+function isSegment(u) {
+  return /\.(ts|aac|mp4|m4s|fmp4)([?#]|$)/i.test(u);
+}
 
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request));
@@ -104,7 +122,32 @@ async function handleRequest(request) {
     return new Response(null, { status: 204, headers: CORS });
   }
 
-  // /stream?channel=NAME — получить прокси-поток для канала
+  // /stream-q?channel=NAME&q=КБИТ — мастер, урезанный до одного уровня, ближайшего к q
+  // (выбор качества в нативном плеере iPhone/iPad, как /stream-q у Russia TV)
+  if (path === '/stream-q') {
+    const inner = await handleRequest(new Request(url.origin + '/stream?channel=' + encodeURIComponent(url.searchParams.get('channel') || '')));
+    if (!inner.ok) return inner;
+    const text = await inner.text();
+    const want = (parseInt(url.searchParams.get('q') || '0', 10) || 0) * 1e3;
+    const rows = text.split('\n');
+    const pairs = [];
+    const head = [];
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i].startsWith('#EXT-X-STREAM-INF')) { pairs.push([rows[i], rows[i + 1] || '']); i++; }
+      else if (!pairs.length && rows[i].trim()) head.push(rows[i]);
+    }
+    const m3u8Headers = { ...CORS, 'Content-Type': 'application/vnd.apple.mpegurl', 'Cache-Control': 'no-store' };
+    if (!want || !pairs.length) return new Response(text, { headers: m3u8Headers });
+    let best = pairs[0], bestD = Infinity;
+    for (const p of pairs) {
+      const m = p[0].match(/BANDWIDTH=(\d+)/);
+      const d = Math.abs((m ? +m[1] : 0) - want);
+      if (d < bestD) { bestD = d; best = p; }
+    }
+    return new Response(head.join('\n') + '\n' + best[0] + '\n' + best[1] + '\n', { headers: m3u8Headers });
+  }
+
+  // /stream?channel=NAME — получить поток канала
   if (path === '/stream') {
     const channel = url.searchParams.get('channel');
     const streamUrl = STREAMS[channel];
@@ -117,7 +160,7 @@ async function handleRequest(request) {
     if (!proxySecret()) {
       return new Response('Proxy is not configured', { status: 503, headers: CORS });
     }
-    return fetchM3u8(streamUrl, url.origin);
+    return fetchM3u8(streamUrl, url.origin, DIRECT.has(channel));
   }
 
   // /proxy?url=ENCODED_URL — прокси для плейлистов и сегментов
@@ -129,10 +172,11 @@ async function handleRequest(request) {
     if (!proxySecret()) {
       return new Response('Proxy is not configured', { status: 503, headers: CORS });
     }
-    if (!/^https?:\/\//i.test(target) || !safeEqual(url.searchParams.get('s') || '', await sign(target))) {
+    const direct = url.searchParams.get('d') === '1';
+    if (!/^https?:\/\//i.test(target) || !safeEqual(url.searchParams.get('s') || '', await sign(direct ? 'd:' + target : target))) {
       return new Response('Forbidden', { status: 403, headers: CORS });
     }
-    return proxyTarget(target, url.origin);
+    return proxyTarget(target, url.origin, direct);
   }
 
   // /debug?url=ENCODED_URL — проверка доступности URL с CF Worker
@@ -163,7 +207,7 @@ async function handleRequest(request) {
 
   // /version
   if (path === '/version') {
-    return new Response(JSON.stringify({ version: VERSION, channels: Object.keys(STREAMS).length }), {
+    return new Response(JSON.stringify({ version: VERSION, channels: Object.keys(STREAMS).length, direct: DIRECT.size, mode: 'hybrid' }), {
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
@@ -201,8 +245,15 @@ function safeEqual(a, b) {
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
-async function proxyLink(abs, workerOrigin) {
+// direct=true помечает вложенный плейлист DIRECT-канала: при его переписывании
+// сегменты тоже пойдут напрямую. Флаг входит в подпись, подменить его нельзя.
+async function proxyLink(abs, workerOrigin, direct) {
+  if (direct) return `${workerOrigin}/proxy?url=${encodeURIComponent(abs)}&d=1&s=${await sign('d:' + abs)}`;
   return `${workerOrigin}/proxy?url=${encodeURIComponent(abs)}&s=${await sign(abs)}`;
+}
+// Сегмент отдаём прямой ссылкой, только если канал в DIRECT и ссылка https.
+function directSegment(abs, direct) {
+  return direct && abs.startsWith('https://') && isSegment(abs);
 }
 
 // ── Разрешить относительный URL относительно базового ───────────────────────
@@ -222,7 +273,7 @@ function baseDir(url) {
 }
 
 // ── Перезаписать m3u8: все URL → /proxy?url=... ──────────────────────────────
-async function rewriteM3u8(content, sourceUrl, workerOrigin) {
+async function rewriteM3u8(content, sourceUrl, workerOrigin, direct) {
   const base = baseDir(sourceUrl);
   const lines = content.split('\n');
   const out = [];
@@ -236,7 +287,7 @@ async function rewriteM3u8(content, sourceUrl, workerOrigin) {
       let fixed = line;
       for (const m of line.matchAll(/URI="([^"]+)"/g)) {
         const abs = resolveUrl(base, m[1]);
-        fixed = fixed.replace(m[0], `URI="${await proxyLink(abs, workerOrigin)}"`);
+        fixed = fixed.replace(m[0], directSegment(abs, direct) ? `URI="${abs}"` : `URI="${await proxyLink(abs, workerOrigin, direct)}"`);
       }
       if (fixed.startsWith('#EXT-X-STREAM-INF')) {
         fixed = fixed.replace(/,?SUBTITLES="[^"]*"/, '');
@@ -244,7 +295,7 @@ async function rewriteM3u8(content, sourceUrl, workerOrigin) {
       out.push(fixed);
     } else {
       const abs = resolveUrl(base, line);
-      out.push(await proxyLink(abs, workerOrigin));
+      out.push(directSegment(abs, direct) ? abs : await proxyLink(abs, workerOrigin, direct));
     }
   }
 
@@ -252,7 +303,7 @@ async function rewriteM3u8(content, sourceUrl, workerOrigin) {
 }
 
 // ── Получить мастер-плейлист и переписать для прокси ─────────────────────────
-async function fetchM3u8(streamUrl, workerOrigin) {
+async function fetchM3u8(streamUrl, workerOrigin, direct) {
   let res;
   try {
     res = await fetch(streamUrl, {
@@ -276,7 +327,7 @@ async function fetchM3u8(streamUrl, workerOrigin) {
   }
 
   const body = await res.text();
-  const rewritten = await rewriteM3u8(body, streamUrl, workerOrigin);
+  const rewritten = await rewriteM3u8(body, res.url || streamUrl, workerOrigin, direct);
 
   return new Response(rewritten, {
     headers: {
@@ -288,7 +339,7 @@ async function fetchM3u8(streamUrl, workerOrigin) {
 }
 
 // ── Прокси для произвольного URL (суб-плейлист или сегмент) ──────────────────
-async function proxyTarget(targetUrl, workerOrigin) {
+async function proxyTarget(targetUrl, workerOrigin, direct) {
   let res;
   try {
     res = await fetch(targetUrl, {
@@ -315,7 +366,7 @@ async function proxyTarget(targetUrl, workerOrigin) {
 
   if (isM3u8) {
     const body = await res.text();
-    const rewritten = await rewriteM3u8(body, targetUrl, workerOrigin);
+    const rewritten = await rewriteM3u8(body, res.url || targetUrl, workerOrigin, direct);
     return new Response(rewritten, {
       headers: {
         ...CORS,
