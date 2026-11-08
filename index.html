@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="referrer" content="no-referrer">
   <title>Korea TV Live</title>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html,body { background:#0a0a14; height:100%; font-family:-apple-system,BlinkMacSystemFont,sans-serif; color:white; overflow:hidden; touch-action:pan-x pan-y pinch-zoom; }
@@ -14,30 +15,48 @@
     /* ── Hub ── */
     #hub-screen { display:flex; flex-direction:column; align-items:center; height:100%; overflow-y:auto; padding:24px 16px 40px; padding-top:calc(24px + max(var(--tg-safe-top,0px), env(safe-area-inset-top,0px))); }
     .hub-logo { font-size:26px; font-weight:900; letter-spacing:2px; margin-bottom:4px; text-transform:uppercase; }
-    .hub-logo .red  { color:#CD2E3A; }
-    .hub-logo .white{ color:white; }
-    .hub-logo .blue { color:#0047A0; }
+    .hub-logo .red   { color:#CD2E3A; }
+    .hub-logo .white { color:white; }
+    .hub-logo .blue  { color:#0047A0; }
+    .thank-btn { margin:22px 0 4px; padding:12px 22px; border-radius:999px; border:1px solid #3a3a2a; background:#1f1d12; color:#ffd54a; font-size:14px; font-weight:700; cursor:pointer; }
+    .thank-btn:active { transform:scale(.96); }
+    #donate-modal { position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,.7); display:none; align-items:flex-end; justify-content:center; }
+    #donate-modal .sheet { width:100%; max-width:560px; background:#14141f; border-radius:18px 18px 0 0; padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px)); text-align:center; }
+    #donate-modal h3 { font-size:17px; margin-bottom:14px; }
+    #donate-modal .amounts { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    #donate-modal .amounts button { padding:14px 0; border-radius:12px; border:1px solid #3a3a2a; background:#1f1d12; color:#ffd54a; font-size:15px; font-weight:800; cursor:pointer; }
+    #donate-modal .close { margin-top:12px; background:none; border:none; color:#666; font-size:14px; cursor:pointer; }
     .hub-sub { font-size:13px; color:#555; margin-bottom:24px; }
-    .channels-grid { width:100%; max-width:560px; display:flex; flex-direction:column; gap:10px; }
+    .footer-note { font-size:11px; color:#444; text-align:center; margin-top:16px; line-height:1.6; max-width:480px; }
+    .channels-grid { width:100%; max-width:560px; display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
 
-    .category-header { font-size:11px; font-weight:700; color:#444; text-transform:uppercase; letter-spacing:2px; padding:6px 4px 2px; margin-top:6px; }
+    .category-header { grid-column:1/-1; font-size:11px; font-weight:700; color:#444; text-transform:uppercase; letter-spacing:2px; padding:6px 4px 2px; margin-top:6px; }
 
-    .channel-card { background:#1a1a28; border:1px solid #2a2a3a; border-radius:14px; padding:16px 18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+    .channel-card { background:#1a1a28; border:1px solid #2a2a3a; border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; min-width:0; }
     .channel-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:4px 0 0 4px; background:var(--ch-color,#555); }
     .channel-card:active { opacity:.75; transform:scale(.98); }
-    .ch-icon { width:52px; height:52px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; flex-shrink:0; }
-    .ch-info { flex:1; }
-    .ch-name { font-size:16px; font-weight:700; margin-bottom:3px; }
-    .ch-desc { font-size:12px; color:#555; }
+    .ch-icon { width:44px; height:44px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; flex-shrink:0; }
+    .ch-icon.ch-logo { background:#0e0e18 !important; padding:6px; box-sizing:border-box; }
+    .ch-icon.ch-logo img { width:100%; height:100%; object-fit:contain; display:block; }
+    .site-link-btn { background:linear-gradient(135deg,#ff9800,#f4511e) !important; font-weight:800 !important; box-shadow:0 2px 10px rgba(244,81,53,.5); }
+    .ch-info { flex:1; min-width:0; }
+    .ch-name { font-size:14px; font-weight:700; white-space:normal; line-height:1.25; }
     .live-dot { width:8px; height:8px; background:var(--ch-color,#555); border-radius:50%; animation:pulse 1.2s infinite; flex-shrink:0; }
-
-    .footer-note { font-size:11px; color:#444; text-align:center; margin-top:20px; line-height:1.6; max-width:480px; }
 
     /* ── Player ── */
     #player-screen { display:none; flex-direction:column; align-items:center; height:100%; }
-    .player-header { width:100%; display:flex; align-items:center; gap:10px; padding:10px 14px; padding-top:calc(10px + max(var(--tg-safe-top,0px), env(safe-area-inset-top,0px))); background:#0d0d1a; border-bottom:1px solid #1e1e2e; flex-shrink:0; }
-    .back-btn { background:#1a1a2e; border:1px solid #333; border-radius:8px; padding:7px 12px; color:#aaa; font-size:14px; cursor:pointer; }
-    .back-btn:active { opacity:.7; }
+    .player-header { width:100%; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; overflow:hidden;
+      padding-top:calc(10px + max(var(--tg-safe-top,0px), env(safe-area-inset-top,0px)));
+      padding-right:calc(14px + var(--tg-safe-right,0px));
+      padding-bottom:10px;
+      padding-left:calc(14px + var(--tg-safe-left,0px));
+      background:#0d0d1a; border-bottom:1px solid #1e1e2e; flex-shrink:0; }
+    .ch-title-bar { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* Кнопка "← Каналы" переехала в нижнюю панель управления (.controls) —
+       в верхней шапке она перекрывалась плавающей кнопкой "Закрыть" от Telegram
+       в полноэкранном режиме на iOS (та кнопка рисуется поверх контента и может
+       быть шире/у́же в зависимости от языка и устройства, надёжно её не обойти). */
+    .btn.channels-btn { background:linear-gradient(135deg,#1565c0,#0d47a1); font-weight:700; order:-1; }
     .ch-title-bar { font-size:15px; font-weight:700; }
     .live-badge-top { color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; margin-left:6px; display:none; }
 
@@ -65,6 +84,7 @@
     .btn { padding:12px 18px; color:white; border:none; border-radius:10px; font-size:14px; cursor:pointer; transition:all .2s; flex:1; max-width:160px; background:rgba(255,255,255,.12); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.1); }
     .btn:active { transform:scale(.96); }
     .btn.danger { background:#CD2E3A; }
+    .btn.air-next { flex:1 0 100%; max-width:none; background:#CD2E3A; font-weight:600; }
     .btn.reload { background:#333; }
 
     #status { font-size:13px; color:#888; text-align:center; padding:8px 0 0; flex-shrink:0; }
@@ -76,28 +96,39 @@
 
 <div id="hub-screen">
   <div class="hub-logo"><span class="red">한</span><span class="blue">국</span> <span class="white">TV</span></div>
-  <div class="hub-sub" id="hub-sub">LIVE — Free — 24/7</div>
+  <div class="hub-sub" id="hub-sub"></div>
   <div class="channels-grid" id="channels-grid"></div>
+  <button class="thank-btn" id="thank-btn-hub"></button>
   <div class="footer-note" id="footer-note"></div>
 </div>
 
+<div id="donate-modal"><div class="sheet">
+  <h3 id="donate-title"></h3>
+  <div class="amounts" id="donate-amounts"></div>
+  <button class="close" id="donate-close">✕</button>
+</div></div>
+
 <div id="player-screen">
   <div class="player-header">
-    <button class="back-btn" id="back-btn">← Channels</button>
     <span class="ch-title-bar" id="ch-title"></span>
     <span class="live-badge-top" id="live-badge-top">LIVE</span>
   </div>
   <div id="video-container">
-    <div class="live-badge" id="live-badge"><span class="dot"></span> LIVE</div>
-    <div id="audio-badge"><div class="pill">🎧 Audio only</div></div>
+    <div class="live-badge" id="live-badge"><span class="dot"></span> <span id="live-badge-text">LIVE</span></div>
+    <div id="audio-badge"><div class="pill" id="audio-pill">🎧</div></div>
     <video id="video" autoplay playsinline webkit-playsinline airplay="allow" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;"></video>
     <div class="overlay" id="overlay">
       <div class="controls">
+        <button id="back-btn" class="btn channels-btn"></button>
         <button id="reload-btn" class="btn reload" style="display:none"></button>
         <button id="unmute-btn" class="btn danger" style="display:none"></button>
         <button id="mode-btn" class="btn"></button>
         <button id="fullscreen-btn" class="btn"></button>
+        <button id="quality-btn" class="btn" style="display:none"></button>
         <button id="pip-btn" class="btn" style="display:none"></button>
+        <button id="airplay-btn" class="btn" style="display:none">📲 AirPlay</button>
+        <button id="thank-btn-player" class="btn"></button>
+        <button id="site-link-btn" class="btn site-link-btn">🌐 korea-tv.uk</button>
       </div>
     </div>
     <audio id="audio-bg" muted></audio>
@@ -110,9 +141,25 @@ const tg = window.Telegram?.WebApp;
 
 // ── Safe area ──────────────────────────────────────────────────────────────
 function updateSafeArea() {
-  const tgTop = tg?.contentSafeAreaInsets?.top || tg?.safeAreaInsets?.top || 0;
-  const top = tgTop > 0 ? tgTop : (document.fullscreenElement || tg?.isFullscreen ? 32 : 0);
+  const inFs = document.fullscreenElement || tg?.isFullscreen;
+  const csa = tg?.contentSafeAreaInsets || {};
+  const sa  = tg?.safeAreaInsets || {};
+  // В полноэкранном режиме Telegram рисует свою плавающую кнопку "Закрыть"
+  // поверх контента (не резервируя место через layout) — если сам Telegram
+  // не прислал реальные contentSafeAreaInsets, подстраховываемся своими
+  // отступами, чтобы наша кнопка "← Каналы" не оказалась под ней.
+  const topReal   = csa.top    || sa.top    || 0;
+  const leftReal  = csa.left   || sa.left   || 0;
+  const rightReal = csa.right  || sa.right  || 0;
+  // По скриншоту с iPhone: капсула "✕ Закрыть" слева доходит примерно до 25%
+  // ширины экрана, а шеврон+меню "···" справа занимают примерно 20% ширины —
+  // старых 54px хватало не всегда, увеличили запас с обеих сторон.
+  const top   = topReal   > 0 ? topReal   : (inFs ? 56  : 0);
+  const left  = leftReal  > 0 ? leftReal  : (inFs ? 104 : 0);
+  const right = rightReal > 0 ? rightReal : (inFs ? 88  : 0);
   document.documentElement.style.setProperty('--tg-safe-top', top + 'px');
+  document.documentElement.style.setProperty('--tg-safe-left', left + 'px');
+  document.documentElement.style.setProperty('--tg-safe-right', right + 'px');
 }
 if (tg) {
   tg.ready(); tg.expand();
@@ -134,102 +181,232 @@ function isIOS() {
 function isAndroid() { return /Android/i.test(navigator.userAgent); }
 
 // ── Каналы ────────────────────────────────────────────────────────────────
-// ВАЖНО: список содержит только реально проверенные потоки (прямой HTTP-запрос,
-// статус 200 + валидный Content-Type application/x-mpegURL / vnd.apple.mpegurl).
-// Мёртвые кандидаты (KBS1, KBS2, KBS World, YTN, YTN World, tvN, Channel A,
-// TV Chosun/2, SBS KNN, CGNTV и др.) сюда не включены — см. README_DEPLOY.md.
 const PROXY = 'https://korea-worker.dyaltd.workers.dev';
 
+// v82.14: ротация резервных прокси — на сайте (russian-tv.com) это уже есть
+// и решает как раз ту разницу в надёжности "на сайте работает, в мини-аппе
+// нет": при сбое основного Worker'а (rate limit, временный сетевой сбой,
+// краевой узел Cloudflare и т.п.) плеер сайта автоматически переключается
+// на резервный, а мини-апп раньше был жёстко привязан к одному URL без
+// какого-либо резерва. Список тот же, что на сайте (/proxy.json).
+// v82.27: пользователь сообщил, что Первый канал заводится только после
+// двух переключений (т.е. первые 2 прокси в списке не срабатывают с
+// первой попытки, а третий — стабильно). Переставил birch-creek первым.
+// v82.36: основной воркер первым, как на сайте (старая перестановка birch-creek под Первый канал устарела).
+// Korea: один воркер (korea-worker, гибридный режим v1.6.0). Механизм ротации оставлен как в эталоне — с одним адресом он просто повторяет его.
+var PROXIES = ['https://korea-worker.dyaltd.workers.dev'];
+var _proxyIdx = 0;
+var _proxyFailedAt = {};
+function _currentProxy() { return PROXIES[_proxyIdx % PROXIES.length]; }
+function _markProxyFailed() { _proxyFailedAt[_proxyIdx % PROXIES.length] = Date.now(); }
+function _advanceProxy() {
+  for (var i = 1; i <= PROXIES.length; i++) {
+    var idx = (_proxyIdx + i) % PROXIES.length;
+    var failedAt = _proxyFailedAt[idx];
+    if (!failedAt || Date.now() - failedAt > 90000) { _proxyIdx += i; return; }
+  }
+  _proxyIdx++;
+}
+function _streamUrl(ch) { return _currentProxy() + '/stream?channel=' + ch.id; }
+
+// v82.15: логотипы — 1-в-1 как на сайте (russian-tv.com): там, где у сайта
+// есть настоящая картинка логотипа (assets/logos/*.svg или smotret.tv), она
+// указана в поле `logo`; остальные каналы — на сайте у них тоже только
+// цветная текстовая плашка, поэтому здесь она и остаётся (это не расхождение
+// с сайтом, а тот же самый fallback). `slug` — путь канала на russian-tv.com
+// для кнопки "Смотреть на сайте".
+const SITE = 'https://korea-tv.uk';
 const CHANNEL_GROUPS = [
   {
     label: '🌏 International',
     channels: [
-      { id:'arirang',       name:'Arirang TV',    desc:'아리랑TV',     icon:'ARI', color:'#CD2E3A', iconBg:'#1a0808', stream: PROXY+'/stream?channel=arirang' },
-      { id:'arirang_radio', name:'Arirang Radio',  desc:'아리랑라디오',  icon:'AR',  color:'#0047A0', iconBg:'#08101a', stream: PROXY+'/stream?channel=arirang_radio' },
+      { id:'arirang',       name:'Arirang TV',    desc:'아리랑TV',     icon:'ARI', color:'#CD2E3A', iconBg:'#1a0808', slug:'arirang-live', stream: PROXY+'/stream?channel=arirang' },
+      { id:'arirang_radio', name:'Arirang Radio',  desc:'아리랑라디오',  icon:'AR',  color:'#0047A0', iconBg:'#08101a', slug:'arirang-radio-live', stream: PROXY+'/stream?channel=arirang_radio' },
     ]
   },
   {
     label: '📚 EBS / Education',
     channels: [
-      { id:'ebs1',        name:'EBS 1TV',      desc:'EBS 1TV',    icon:'E1', color:'#00838f', iconBg:'#081214', stream: PROXY+'/stream?channel=ebs1' },
-      { id:'ebs2',        name:'EBS 2TV',      desc:'EBS 2TV',    icon:'E2', color:'#00838f', iconBg:'#081214', stream: PROXY+'/stream?channel=ebs2' },
-      { id:'ebs_plus1',   name:'EBS Plus 1',   desc:'EBS플러스1',  icon:'E+1',color:'#00695c', iconBg:'#061212', stream: PROXY+'/stream?channel=ebs_plus1' },
-      { id:'ebs_plus2',   name:'EBS Plus 2',   desc:'EBS플러스2',  icon:'E+2',color:'#00695c', iconBg:'#061212', stream: PROXY+'/stream?channel=ebs_plus2' },
-      { id:'ebs_kids',    name:'EBS Kids',     desc:'EBS키즈',     icon:'EK', color:'#f9a825', iconBg:'#1a1400', stream: PROXY+'/stream?channel=ebs_kids' },
-      { id:'ebs_english', name:'EBS English',  desc:'EBS잉글리시',  icon:'EE', color:'#5e35b1', iconBg:'#120a1a', stream: PROXY+'/stream?channel=ebs_english' },
+      { id:'ebs1',        name:'EBS 1TV',      desc:'EBS 1TV',    icon:'E1', color:'#00838f', iconBg:'#081214', slug:'ebs1-live', stream: PROXY+'/stream?channel=ebs1' },
+      { id:'ebs2',        name:'EBS 2TV',      desc:'EBS 2TV',    icon:'E2', color:'#00838f', iconBg:'#081214', slug:'ebs2-live', stream: PROXY+'/stream?channel=ebs2' },
+      { id:'ebs_plus1',   name:'EBS Plus 1',   desc:'EBS플러스1',  icon:'E+1',color:'#00695c', iconBg:'#061212', slug:'ebs-plus1-live', stream: PROXY+'/stream?channel=ebs_plus1' },
+      { id:'ebs_plus2',   name:'EBS Plus 2',   desc:'EBS플러스2',  icon:'E+2',color:'#00695c', iconBg:'#061212', slug:'ebs-plus2-live', stream: PROXY+'/stream?channel=ebs_plus2' },
+      { id:'ebs_kids',    name:'EBS Kids',     desc:'EBS키즈',     icon:'EK', color:'#f9a825', iconBg:'#1a1400', slug:'ebs-kids-live', stream: PROXY+'/stream?channel=ebs_kids' },
+      { id:'ebs_english', name:'EBS English',  desc:'EBS잉글리시',  icon:'EE', color:'#5e35b1', iconBg:'#120a1a', slug:'ebs-english-live', stream: PROXY+'/stream?channel=ebs_english' },
     ]
   },
   {
     label: '🏛️ 공영 · 정책 / Public & Culture',
     channels: [
-      { id:'ktv',   name:'KTV', desc:'KTV 국민방송', icon:'KTV', color:'#0047A0', iconBg:'#08101a', stream: PROXY+'/stream?channel=ktv' },
-      { id:'gugak', name:'Gugak TV', desc:'국악방송', icon:'국악', color:'#8d6e63', iconBg:'#140f0c', stream: PROXY+'/stream?channel=gugak' },
-      { id:'oun',   name:'OUN', desc:'방송대학TV', icon:'OUN', color:'#1565c0', iconBg:'#0a0f1a', stream: PROXY+'/stream?channel=oun' },
-      { id:'nbs',   name:'NBS', desc:'농수산방송',  icon:'NBS', color:'#2e7d32', iconBg:'#081208', stream: PROXY+'/stream?channel=nbs' },
+      { id:'ktv',   name:'KTV', desc:'KTV 국민방송', icon:'KTV', color:'#0047A0', iconBg:'#08101a', slug:'ktv-live', stream: PROXY+'/stream?channel=ktv' },
+      { id:'gugak', name:'Gugak TV', desc:'국악방송', icon:'국악', color:'#8d6e63', iconBg:'#140f0c', slug:'gugak-live', stream: PROXY+'/stream?channel=gugak' },
+      { id:'oun',   name:'OUN', desc:'방송대학TV', icon:'OUN', color:'#1565c0', iconBg:'#0a0f1a', slug:'oun-live', stream: PROXY+'/stream?channel=oun' },
+      { id:'nbs',   name:'NBS', desc:'농수산방송',  icon:'NBS', color:'#2e7d32', iconBg:'#081208', slug:'nbs-live', stream: PROXY+'/stream?channel=nbs' },
     ]
   },
   {
     label: '📍 지역 방송 / Regional',
     channels: [
-      { id:'mbc_jeju', name:'MBC Jeju',  desc:'제주 MBC', icon:'제주', color:'#0288d1', iconBg:'#0a1018', stream: PROXY+'/stream?channel=mbc_jeju' },
-      { id:'sbs_kbc',  name:'SBS KBC',   desc:'광주방송',  icon:'KBC', color:'#c62828', iconBg:'#180808', stream: PROXY+'/stream?channel=sbs_kbc' },
-      { id:'sbs_ubc',  name:'SBS UBC',   desc:'울산방송',  icon:'UBC', color:'#c62828', iconBg:'#180808', stream: PROXY+'/stream?channel=sbs_ubc' },
-      { id:'tbs',      name:'TBS Seoul', desc:'교통방송',  icon:'TBS', color:'#455a64', iconBg:'#0d1214', stream: PROXY+'/stream?channel=tbs' },
+      { id:'mbc_jeju', name:'MBC Jeju',  desc:'제주 MBC', icon:'제주', color:'#0288d1', iconBg:'#0a1018', slug:'mbc-jeju-live', stream: PROXY+'/stream?channel=mbc_jeju' },
+      { id:'sbs_kbc',  name:'SBS KBC',   desc:'광주방송',  icon:'KBC', color:'#c62828', iconBg:'#180808', slug:'sbs-kbc-live', stream: PROXY+'/stream?channel=sbs_kbc' },
+      { id:'sbs_ubc',  name:'SBS UBC',   desc:'울산방송',  icon:'UBC', color:'#c62828', iconBg:'#180808', slug:'sbs-ubc-live', stream: PROXY+'/stream?channel=sbs_ubc' },
+      { id:'tbs',      name:'TBS Seoul', desc:'교통방송',  icon:'TBS', color:'#455a64', iconBg:'#0d1214', slug:'tbs-live', stream: PROXY+'/stream?channel=tbs' },
     ]
   },
   {
     label: '⛪ 종교 · 기타 / Religious & Other',
     channels: [
-      { id:'btn',    name:'BTN TV',  desc:'불교방송', icon:'BTN', color:'#f57f17', iconBg:'#1a1200', stream: PROXY+'/stream?channel=btn' },
-      { id:'abn',    name:'ABN TV',  desc:'ABN',      icon:'ABN', color:'#6a1b9a', iconBg:'#140a18', stream: PROXY+'/stream?channel=abn' },
-      { id:'fgtv',   name:'FGTV',    desc:'여의도순복음교회', icon:'FGTV', color:'#8e24aa', iconBg:'#170a1a', stream: PROXY+'/stream?channel=fgtv' },
-      { id:'rutc',   name:'RUTC TV', desc:'RUTC 복음방송', icon:'RUTC', color:'#00695c', iconBg:'#061212', stream: PROXY+'/stream?channel=rutc' },
+      { id:'btn',    name:'BTN TV',  desc:'불교방송', icon:'BTN', color:'#f57f17', iconBg:'#1a1200', slug:'btn-live', stream: PROXY+'/stream?channel=btn' },
+      { id:'abn',    name:'ABN TV',  desc:'ABN',      icon:'ABN', color:'#6a1b9a', iconBg:'#140a18', slug:'abn-live', stream: PROXY+'/stream?channel=abn' },
+      { id:'fgtv',   name:'FGTV',    desc:'여의도순복음교회', icon:'FGTV', color:'#8e24aa', iconBg:'#170a1a', slug:'fgtv-live', stream: PROXY+'/stream?channel=fgtv' },
+      { id:'rutc',   name:'RUTC TV', desc:'RUTC 복음방송', icon:'RUTC', color:'#00695c', iconBg:'#061212', slug:'rutc-live', stream: PROXY+'/stream?channel=rutc' },
     ]
   },
   {
     label: '📍 지역 · 기타 / Regional & Misc',
     channels: [
-      { id:'mbc_chuncheon', name:'MBC Chuncheon', desc:'춘천 MBC', icon:'춘천', color:'#0288d1', iconBg:'#0a1018', stream: PROXY+'/stream?channel=mbc_chuncheon' },
-      { id:'mbc_daejeon',   name:'MBC Daejeon',   desc:'대전 MBC', icon:'대전', color:'#0288d1', iconBg:'#0a1018', stream: PROXY+'/stream?channel=mbc_daejeon' },
-      { id:'nhtv',          name:'NHTV',          desc:'NHTV 농협방송', icon:'NHTV', color:'#2e7d32', iconBg:'#081208', stream: PROXY+'/stream?channel=nhtv' },
-      { id:'nib',           name:'NIB',           desc:'남인천방송', icon:'NIB', color:'#0288d1', iconBg:'#0a1018', stream: PROXY+'/stream?channel=nib' },
-      { id:'jjctv',         name:'JJCTV',         desc:'지방자치TV', icon:'JJC', color:'#455a64', iconBg:'#0d1214', stream: PROXY+'/stream?channel=jjctv' },
-      { id:'kcn',           name:'KCN',           desc:'금강방송',  icon:'KCN', color:'#2e7d32', iconBg:'#081208', stream: PROXY+'/stream?channel=kcn' },
+      { id:'mbc_chuncheon', name:'MBC Chuncheon', desc:'춘천 MBC', icon:'춘천', color:'#0288d1', iconBg:'#0a1018', slug:'mbc-chuncheon-live', stream: PROXY+'/stream?channel=mbc_chuncheon' },
+      { id:'mbc_daejeon',   name:'MBC Daejeon',   desc:'대전 MBC', icon:'대전', color:'#0288d1', iconBg:'#0a1018', slug:'mbc-daejeon-live', stream: PROXY+'/stream?channel=mbc_daejeon' },
+      { id:'nhtv',          name:'NHTV',          desc:'NHTV 농협방송', icon:'NHTV', color:'#2e7d32', iconBg:'#081208', slug:'nhtv-live', stream: PROXY+'/stream?channel=nhtv' },
+      { id:'nib',           name:'NIB',           desc:'남인천방송', icon:'NIB', color:'#0288d1', iconBg:'#0a1018', slug:'nib-live', stream: PROXY+'/stream?channel=nib' },
+      { id:'jjctv',         name:'JJCTV',         desc:'지방자치TV', icon:'JJC', color:'#455a64', iconBg:'#0d1214', slug:'jjctv-live', stream: PROXY+'/stream?channel=jjctv' },
+      { id:'kcn',           name:'KCN',           desc:'금강방송',  icon:'KCN', color:'#2e7d32', iconBg:'#081208', slug:'kcn-live', stream: PROXY+'/stream?channel=kcn' },
     ]
   },
   {
     label: '📈 경제 · 쇼핑 / Business & Shopping',
     channels: [
-      { id:'wowtv',   name:'한국경제TV', desc:'WOWTV', icon:'WOW', color:'#1565c0', iconBg:'#0a0f1a', stream: PROXY+'/stream?channel=wowtv' },
-      { id:'mkmoney', name:'매일경제TV', desc:'MK Money', icon:'MK', color:'#1565c0', iconBg:'#0a0f1a', stream: PROXY+'/stream?channel=mkmoney' },
-      { id:'ktalpha', name:'KT알파쇼핑', desc:'K Shopping', icon:'KT', color:'#6a1b9a', iconBg:'#140a18', stream: PROXY+'/stream?channel=ktalpha' },
+      { id:'wowtv',   name:'한국경제TV', desc:'WOWTV', icon:'WOW', color:'#1565c0', iconBg:'#0a0f1a', slug:'wowtv-live', stream: PROXY+'/stream?channel=wowtv' },
+      { id:'mkmoney', name:'매일경제TV', desc:'MK Money', icon:'MK', color:'#1565c0', iconBg:'#0a0f1a', slug:'mkmoney-live', stream: PROXY+'/stream?channel=mkmoney' },
+      { id:'ktalpha', name:'KT알파쇼핑', desc:'K Shopping', icon:'KT', color:'#6a1b9a', iconBg:'#140a18', slug:'ktalpha-live', stream: PROXY+'/stream?channel=ktalpha' },
     ]
   },
   {
     label: '🎵 음악 · 라디오 / Music & Radio',
     channels: [
-      { id:'tbs_efm', name:'TBS eFM', desc:'교통방송 영어FM (K-pop)', icon:'eFM', color:'#e91e63', iconBg:'#1a0810', stream: PROXY+'/stream?channel=tbs_efm' },
-      { id:'tbs_fm',  name:'TBS FM',  desc:'교통방송 FM',            icon:'FM',  color:'#e91e63', iconBg:'#1a0810', stream: PROXY+'/stream?channel=tbs_fm' },
+      { id:'tbs_efm', name:'TBS eFM', desc:'교통방송 영어FM (K-pop)', icon:'eFM', color:'#e91e63', iconBg:'#1a0810', slug:'tbs-efm-live', stream: PROXY+'/stream?channel=tbs_efm' },
+      { id:'tbs_fm',  name:'TBS FM',  desc:'교통방송 FM',            icon:'FM',  color:'#e91e63', iconBg:'#1a0810', slug:'tbs-fm-live', stream: PROXY+'/stream?channel=tbs_fm' },
     ]
   },
 ];
 
-// ── Переводы (только ko / en) ────────────────────────────────────────────────
+// ── Переводы ────────────────────────────────────────────────────────────────
 const T = {
-  ko:{ loading:'스트림 불러오는 중...', connecting:'연결 중...', live:'LIVE', pressPlay:'▶ 누르세요', errorStream:'오류 — 재연결 중...', errorUrl:'URL을 가져오지 못했습니다', errorServer:'서버 오류', reconnect:'🔄 재연결', unmute:'🔊 소리 켜기', mute:'🔇 소리 끄기', fullscreen:'🔳 전체화면', exitFs:'✕ 나가기', audioMode:'🎧 오디오만', videoMode:'🎥 비디오' },
-  en:{ loading:'Loading...', connecting:'Connecting...', live:'LIVE', pressPlay:'Press ▶', errorStream:'Error — reconnecting...', errorUrl:'Failed to get URL', errorServer:'Server error', reconnect:'🔄 Reconnect', unmute:'🔊 Unmute', mute:'🔇 Mute', fullscreen:'🔳 Fullscreen', exitFs:'✕ Exit', audioMode:'🎧 Audio only', videoMode:'🎥 Video' },
+  ko:{ airAgain:'📲 한 번 더 눌러 TV를 선택하세요', unavailable:'채널을 일시적으로 이용할 수 없습니다 — 잠시 후 다시 시도하거나 다른 채널을 선택하세요', loading:'스트림 불러오는 중...', connecting:'연결 중...', live:'LIVE', pressPlay:'▶ 누르세요', errorStream:'오류 — 재연결 중...', errorUrl:'URL을 가져오지 못했습니다', errorServer:'서버 오류', reconnect:'🔄 재연결', unmute:'🔊 소리 켜기', mute:'🔇 소리 끄기', fullscreen:'🔳 전체화면', exitFs:'✕ 나가기', audioMode:'🎧 오디오만', videoMode:'🎥 비디오', channels:'📺 전체 채널', watchOnSite:'🌐 사이트에서 보기', audioPill:'🎧 오디오 모드', hubSub:'실시간 — 무료 — 24시간', footer:'실시간으로 확인된 채널만 표시됩니다. 비공식 소스 채널은 예고 없이 중단될 수 있어 제외했습니다.' },
+  en:{ airAgain:'📲 Tap again to choose your TV', unavailable:'Channel temporarily unavailable — try again later or pick another', loading:'Loading...', connecting:'Connecting...', live:'LIVE', pressPlay:'Press ▶', errorStream:'Error — reconnecting...', errorUrl:'Failed to get URL', errorServer:'Server error', reconnect:'🔄 Reconnect', unmute:'🔊 Unmute', mute:'🔇 Mute', fullscreen:'🔳 Fullscreen', exitFs:'✕ Exit', audioMode:'🎧 Audio only', videoMode:'🎥 Video', channels:'📺 All channels', watchOnSite:'🌐 Watch on website', audioPill:'🎧 Audio mode', hubSub:'LIVE — Free — 24/7', footer:'Only channels verified live are listed. Unofficial-source channels that failed verification were excluded.' },
 };
 function getLang() {
   try { const s=tg?.initDataUnsafe?.user?.language_code?.split('-')[0].toLowerCase(); if(s&&T[s]) return s; } catch(e) {}
   const b=(navigator.language||'en').split('-')[0].toLowerCase(); return T[b]?b:'ko';
 }
-const lang = getLang();
-const t = T[lang];
-document.getElementById('hub-sub').textContent = lang==='ko' ? '실시간 — 무료 — 24시간' : 'LIVE — Free — 24/7';
-document.getElementById('back-btn').textContent = lang==='ko' ? '← 채널 목록' : '← Channels';
-document.getElementById('footer-note').textContent = lang==='ko'
-  ? '실시간으로 확인된 채널만 표시됩니다. 비공식 소스 채널은 예고 없이 중단될 수 있어 제외했습니다.'
-  : 'Only channels verified live are listed. Unofficial-source channels that failed verification were excluded.';
+const t = T[getLang()];
+document.getElementById('hub-sub').textContent = t.hubSub;
+document.getElementById('footer-note').textContent = t.footer;
+document.getElementById('live-badge-text').textContent = t.live;
+document.getElementById('audio-pill').textContent = t.audioPill;
+
+// ── Выбор качества для нативного HLS (iPhone/iPad): уровни читаем из мастер-плейлиста, фиксированный уровень — через воркер /stream-q ──
+function initQualityNative(streamUrl) {
+  const btn = document.getElementById('quality-btn'), cont = document.getElementById('video-container');
+  if (!btn || !cont || streamUrl.indexOf('/stream?') < 0) return;
+  btn.style.display = 'none'; btn.onclick = null;
+  const old = document.getElementById('quality-menu'); if (old) old.remove();
+  const ko = getLang() === 'ko', X = { a: ko ? '자동' : 'Auto', m: 'Mbit/s' };
+  const KEY = 'ktv_quality';
+  const get = () => { try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; } };
+  const set = v => { try { localStorage.setItem(KEY, v); } catch (e) {} };
+  const lab = l => { const mb = l.bitrate / 1e6; return l.height ? l.height + 'p' : (mb ? (mb >= 10 ? mb.toFixed(0) : mb.toFixed(1)) + ' ' + X.m : ''); };
+  fetch(streamUrl, { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(txt => {
+    const levels = [];
+    txt.split('\n').forEach(line => { if (line.indexOf('#EXT-X-STREAM-INF') === 0) { const b = line.match(/BANDWIDTH=(\d+)/), h = line.match(/RESOLUTION=\d+x(\d+)/); levels.push({ bitrate: b ? +b[1] : 0, height: h ? +h[1] : 0 }); } });
+    if (levels.length < 2) return;
+    const qUrl = l => streamUrl.replace('/stream?', '/stream-q?') + '&q=' + Math.round(l.bitrate / 1000);
+    const pick = () => {
+      const p = get(); if (p === 'auto') return null; let idx = -1;
+      if (p[0] === 'b') { const w = parseInt(p.slice(1), 10) * 1000; let d = 1e12; levels.forEach((l, i) => { const x = Math.abs(l.bitrate - w); if (x < d) { d = x; idx = i; } }); }
+      else { const w = parseInt(p, 10); let bh = -1; levels.forEach((l, i) => { if (l.height && l.height <= w && l.height > bh) { bh = l.height; idx = i; } }); }
+      return idx >= 0 ? levels[idx] : null;
+    };
+    const label = () => { const l = pick(); return '⚙ ' + (l ? lab(l) : X.a); };
+    const apply = reload => {
+      const l = pick(), target = l ? qUrl(l) : streamUrl;
+      if (video.getAttribute('data-rtvq') !== target) {
+        video.setAttribute('data-rtvq', target);
+        if (reload || l) { video.src = target; const p = video.play(); if (p && p.catch) p.catch(() => {}); }
+      }
+      btn.textContent = label();
+    };
+    const closeMenu = () => { const m = document.getElementById('quality-menu'); if (m) m.remove(); };
+    btn.style.display = '';
+    btn.onclick = e => {
+      e.stopPropagation();
+      if (document.getElementById('quality-menu')) { closeMenu(); return; }
+      const m = document.createElement('div'); m.id = 'quality-menu';
+      m.style.cssText = 'position:absolute;right:10px;bottom:76px;z-index:60;background:#12121f;border:1px solid #2a2a40;border-radius:10px;padding:6px;min-width:170px;box-shadow:0 8px 28px rgba(0,0,0,.55);color:#e2e2f0;font:13px/1.3 -apple-system,BlinkMacSystemFont,sans-serif';
+      const add = (text, value) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = text;
+        b.style.cssText = 'display:block;width:100%;text-align:left;background:' + (get() === value ? '#1a3a7a' : 'none') + ';border:0;color:inherit;padding:9px 10px;border-radius:7px;cursor:pointer;font:inherit';
+        b.onclick = ev => { ev.stopPropagation(); set(value); apply(true); closeMenu(); };
+        m.appendChild(b);
+      };
+      add(X.a, 'auto');
+      levels.slice().sort((a, b) => b.bitrate - a.bitrate).forEach(l => add(lab(l) + (l.height ? ' · ' + (l.bitrate / 1e6).toFixed(1) + ' ' + X.m : ''), l.height ? String(l.height) : 'b' + Math.round(l.bitrate / 1000)));
+      cont.appendChild(m);
+    };
+    document.addEventListener('click', closeMenu);
+    apply(false);
+  }).catch(() => {});
+}
+
+// ── Выбор качества (Авто / фиксированный уровень), если источник отдаёт несколько уровней ──
+function initQuality(h) {
+  const btn = document.getElementById('quality-btn'), cont = document.getElementById('video-container');
+  if (!btn || !cont) return;
+  btn.style.display = 'none'; btn.onclick = null;
+  const old = document.getElementById('quality-menu'); if (old) old.remove();
+  const ko = getLang() === 'ko', X = { q: ko ? '화질' : 'Quality', a: ko ? '자동' : 'Auto', m: 'Mbit/s' };
+  const KEY = 'ktv_quality';
+  const get = () => { try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; } };
+  const set = v => { try { localStorage.setItem(KEY, v); } catch (e) {} };
+  const lab = l => { const mb = l.bitrate ? l.bitrate / 1e6 : 0; return l.height ? l.height + 'p' : (mb ? (mb >= 10 ? mb.toFixed(0) : mb.toFixed(1)) + ' ' + X.m : ''); };
+  const apply = () => {
+    const p = get(), lv = h.levels || [];
+    if (p === 'auto' || !lv.length) { h.currentLevel = -1; return; }
+    let idx = -1;
+    if (p[0] === 'b') { const w = parseInt(p.slice(1), 10) * 1000; let d = 1e12; lv.forEach((l, i) => { const x = Math.abs((l.bitrate || 0) - w); if (x < d) { d = x; idx = i; } }); }
+    else { const w = parseInt(p, 10); let bh = -1; lv.forEach((l, i) => { const hh = l.height || 0; if (hh <= w && hh > bh) { bh = hh; idx = i; } }); }
+    h.currentLevel = idx;
+  };
+  const label = () => {
+    const p = get(); const lv = h.levels || [];
+    if (p === 'auto') { const l = lv[h.currentLevel >= 0 ? h.currentLevel : 0]; const hh = (l && l.height) || video.videoHeight || 0; return '⚙ ' + X.a + (hh ? ' (' + hh + 'p)' : ''); }
+    const cl = lv[h.currentLevel]; return '⚙ ' + (cl ? lab(cl) : p);
+  };
+  const closeMenu = () => { const m = document.getElementById('quality-menu'); if (m) m.remove(); };
+  const build = () => {
+    const lv = h.levels || []; if (lv.length < 2) return;
+    apply(); btn.style.display = ''; btn.textContent = label();
+    btn.onclick = e => {
+      e.stopPropagation();
+      if (document.getElementById('quality-menu')) { closeMenu(); return; }
+      const m = document.createElement('div'); m.id = 'quality-menu';
+      m.style.cssText = 'position:absolute;right:10px;bottom:76px;z-index:60;background:#12121f;border:1px solid #2a2a40;border-radius:10px;padding:6px;min-width:170px;box-shadow:0 8px 28px rgba(0,0,0,.55);color:#e2e2f0;font:13px/1.3 -apple-system,BlinkMacSystemFont,sans-serif';
+      const add = (text, value) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = text;
+        b.style.cssText = 'display:block;width:100%;text-align:left;background:' + (get() === value ? '#1a3a7a' : 'none') + ';border:0;color:inherit;padding:9px 10px;border-radius:7px;cursor:pointer;font:inherit';
+        b.onclick = ev => { ev.stopPropagation(); set(value); apply(); btn.textContent = label(); closeMenu(); };
+        m.appendChild(b);
+      };
+      add(X.a, 'auto');
+      lv.map(l => l).sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0)).forEach(l => add(lab(l) + (l.height && l.bitrate ? ' · ' + (l.bitrate / 1e6).toFixed(1) + ' ' + X.m : ''), l.height ? String(l.height) : 'b' + Math.round((l.bitrate || 0) / 1000)));
+      cont.appendChild(m);
+    };
+  };
+  if ((h.levels || []).length) build(); else h.once(Hls.Events.MANIFEST_PARSED, build);
+  h.on(Hls.Events.LEVEL_SWITCHED, () => { if (btn.style.display !== 'none') btn.textContent = label(); });
+  document.addEventListener('click', closeMenu);
+}
+
 
 // ── DOM ────────────────────────────────────────────────────────────────────
 const hubScreen     = document.getElementById('hub-screen');
@@ -248,14 +425,76 @@ const unmuteBtn     = document.getElementById('unmute-btn');
 const modeBtn       = document.getElementById('mode-btn');
 const fullscreenBtn = document.getElementById('fullscreen-btn');
 const pipBtn        = document.getElementById('pip-btn');
+const airBtn        = document.getElementById('airplay-btn');
+const siteLinkBtn   = document.getElementById('site-link-btn');
 
 let currentCh=null, hls=null, hlsAudio=null, hideTimeout=null, tokenRefreshTimer=null;
+let _nativeErrorHandler=null, _nativeMetaHandler=null; // v82.13: именованные обработчики нативной HLS-ветки (Safari/iOS), чтобы гарантированно снимать их и не копить утечку слушателей на общем video-элементе
 let userPaused=false, audioOnly=false, userUnmuted=false, isExpanded=false, wakeLockSentinel=null;
+
+// ── Сторож зависания потока ──────────────────────────────────────────────────
+// Источник (cinerama.uz и другие) иногда тихо перестаёт отдавать новые
+// сегменты БЕЗ fatal-ошибки HLS.js — статус остаётся "ПРЯМОЙ ЭФИР", а
+// картинка замирает/чернеет навсегда, без автопереподключения. На сайте
+// (russian-tv.com) от этого давно есть защита, в мини-аппе её не было —
+// отсюда постоянные жалобы на "не работает" конкретный канал, хотя источник
+// на самом деле восстанавливался сам через какое-то время.
+let _lastProgressTime = Date.now();
+let _lastVideoTime = 0;
+let _lastFrameCount = 0;
+let _lastFrameProgressTime = Date.now();
+let _sessionStart = Date.now();
+let _watchdogReconnecting = false;
+const PREEMPTIVE_REFRESH_MS = 6 * 60 * 1000; // профилактический реконнект с запасом до наблюдаемых сбоев источника
+// v82.40: профилактический реконнект нужен только каналам на cinerama.uz (источник сам обрывает сессию через ~10–12 мин);
+// остальным он лишь рвал картинку и нагружал воркеры. Список = CINERAMA_PATH воркера без каналов, переведённых на smotrim.
+const PREEMPTIVE_IDS = new Set([]);   // Korea: источников cinerama.uz нет — список пуст, код оставлен как в эталоне
+// v82.40: потолок повторных подключений — пауза растёт (1–3 с → до 30 с), после MAX_FAIL_STREAK неудач подряд
+// показываем «Канал временно недоступен» с кнопкой «Повторить», чтобы не долбить воркеры бесконечно.
+const MAX_FAIL_STREAK = 6;
+let _failStreak = 0, _gaveUp = false;
+function _resetRetry() { _failStreak = 0; _gaveUp = false; }
+function _giveUp() { _gaveUp = true; stopStream(); setStatus('unavailable', true); }
+function _scheduleInit(baseMs) {
+  if (!currentCh || _gaveUp) return;
+  _failStreak++;
+  if (_failStreak > MAX_FAIL_STREAK) { _giveUp(); return; }
+  const wait = Math.min(30000, baseMs * Math.pow(2, _failStreak - 1));
+  setTimeout(() => { if (currentCh && !_gaveUp) init(); }, wait);
+}
+// v82.40: тихая зацикленная дорожка для Android вместо второго hls.js на тот же поток (держит медиасессию, трафика не даёт)
+const SILENT_WAV = (() => { const n = 1000, b = new Uint8Array(44 + n), dv = new DataView(b.buffer); const w = (o, s) => { for (let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); }; w(0, 'RIFF'); dv.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true); w(36, 'data'); dv.setUint32(40, n, true); b.fill(128, 44); let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return 'data:audio/wav;base64,' + btoa(s); })();
 
 reloadBtn.textContent     = t.reconnect;
 unmuteBtn.textContent     = t.unmute;
 modeBtn.textContent       = t.audioMode;
 fullscreenBtn.textContent = t.fullscreen;
+backBtn.textContent       = t.channels;
+siteLinkBtn.textContent   = t.watchOnSite;
+siteLinkBtn.onclick = () => {
+  // v82.17: раньше вели на страницу конкретного канала (SITE+'/'+slug+'/'),
+  // теперь — на главную сайта: пользователь сам выберет канал там же, где
+  // и на сайте выбирают каналы (единый список), плюс не нужно поддерживать
+  // соответствие slug'ов на будущее.
+  //
+  // v82.16: раньше открывали через tg.openLink() — на старых клиентах
+  // Telegram (WebApp 6.0, см. предупреждения в консоли выше) параметр
+  // {try_instant_view:false} не поддерживается и молча игнорируется,
+  // из-за чего ссылка иногда открывалась в режиме Instant View — это
+  // упрощённый "читательский" шаблон Telegram без реальной адаптивной
+  // вёрстки сайта, поэтому выглядел как десктопная версия на телефоне.
+  // window.open() отдаёт ссылку системному/внешнему браузеру напрямую,
+  // минуя Instant View — там сайт открывается как обычная страница со
+  // своей адаптивной вёрсткой (viewport есть, на телефоне открывается
+  // именно мобильная версия, не десктопная).
+  const url = SITE + (getLang() === 'ko' ? '/' : '/en/');
+  const w = window.open(url, '_blank');
+  if (!w) {
+    // Popup заблокирован (редко, но бывает в некоторых WebView) — тогда
+    // используем tg.openLink как запасной путь.
+    try { tg?.openLink?.(url, { try_instant_view: false }); } catch(e) {}
+  }
+};
 
 // ── Утилиты ────────────────────────────────────────────────────────────────
 function setStatus(key, isError) {
@@ -349,6 +588,38 @@ pipBtn.onclick = async () => {
     else if (!isIOS() && video.requestPictureInPicture) { await video.requestPictureInPicture(); pipBtn.textContent='✕ PiP'; }
   } catch(e) {}
 };
+// ── AirPlay (iOS): передача видео на Apple TV / телевизор с AirPlay без зеркала экрана (v82.42, как в Bulgaria TV) ──
+// Системный выбор устройства работает только для нативного HLS (не blob/MSE от hls.js). Если канал идёт через hls.js,
+// первое нажатие переключает канал на нативный плеер (кнопка просит нажать ещё раз), второе открывает выбор устройства.
+// Если WebView Telegram не отдаёт AirPlay API — кнопка открывает страницу канала в Safari, где AirPlay есть.
+let _forceNative = false;
+if (isIOS()) {
+  const hasAir = !!window.WebKitPlaybackTargetAvailabilityEvent && typeof video.webkitShowPlaybackTargetPicker === 'function';
+  const isBlob = () => !video.currentSrc || /^blob:/.test(video.currentSrc);
+  const airVis = () => { airBtn.style.display = currentCh ? 'block' : 'none'; };
+  airBtn.textContent = '📲 AirPlay';
+  if (hasAir) {
+    try { video.setAttribute('x-webkit-airplay', 'allow'); video.disableRemotePlayback = false; } catch (e) {}
+    video.addEventListener('webkitplaybacktargetavailabilitychanged', (e) => { if (e.availability !== 'available' && !isBlob()) airBtn.style.display = 'none'; else airVis(); });
+  }
+  ['loadstart', 'playing'].forEach(ev => video.addEventListener(ev, airVis));
+  airBtn.onclick = () => {
+    // Заглушённое видео iOS не передаёт на ТВ: включаем звук прямо в жесте нажатия
+    try { video.muted = false; video.volume = 1; userUnmuted = true; _soundWanted = true; unmuteBtn.textContent = '🔇 ' + t.mute; } catch (e) {}
+    if (!hasAir) {
+      const url = SITE + (getLang() === 'ko' ? '/' : '/en/') + (currentCh && currentCh.slug ? currentCh.slug + '/' : '');
+      const w = window.open(url, '_blank');
+      if (!w) { try { tg.openLink(url, { try_instant_view: false }); } catch (e) {} }
+      return;
+    }
+    if (isBlob()) {
+      if (_forceNative) return;   // нативный плеер ещё запускается
+      _forceNative = true; airBtn.textContent = t.airAgain; airBtn.classList.add('air-next'); stopStream(); init(); return;
+    }
+    airBtn.textContent = '📲 AirPlay'; airBtn.classList.remove('air-next');
+    try { video.webkitShowPlaybackTargetPicker(); } catch (e) {}
+  };
+}
 video.addEventListener('leavepictureinpicture', async () => {
   pipBtn.textContent='🎥 PiP'; userUnmuted=false; video.muted=true;
   if (video.paused) { try { await video.play(); } catch(e) {} }
@@ -358,6 +629,121 @@ video.addEventListener('leavepictureinpicture', async () => {
 async function requestWakeLock() {
   try { if (!isIOS() && 'wakeLock' in navigator && !wakeLockSentinel) wakeLockSentinel=await navigator.wakeLock.request('screen'); } catch(e) {}
 }
+
+// ── Сторож зависания: см. комментарий у объявления переменных выше ──────────
+// v82.36: до первого кадра даём источнику больше времени на старт (медленные thestream/cinerama
+// отдают первые сегменты >12 с — раньше сторож рвал такой старт и крутил циклы переподключений).
+let _playedOnce = false;
+// v82.37: пользователь включил звук — после автопереподключения (сторож, смена воркера, выход из
+// полноэкранного режима) звук возвращается сам, раньше каждый реконнект глушил трансляцию.
+let _soundWanted = false;
+function _restoreSound() {
+  if (!_soundWanted || !currentCh) return;
+  try {
+    video.muted = false; video.volume = 1; userUnmuted = true;
+    unmuteBtn.textContent = '🔇 ' + t.mute;
+    const ab = document.getElementById('audio-bg'); if (ab) { ab.muted = true; ab.pause(); }
+    setTimeout(() => {
+      if (!currentCh || !video.paused) return;
+      // браузер не дал включить звук без жеста — возвращаем безопасный режим без звука
+      video.muted = true; userUnmuted = false; unmuteBtn.textContent = '🔊 ' + t.unmute;
+      video.play().catch(() => {});
+    }, 1500);
+  } catch (e) {}
+}
+video.addEventListener('playing', () => { _playedOnce = true; _failStreak = 0; });
+const START_GRACE_MS = 30000;
+video.addEventListener('timeupdate', () => {
+  if (video.currentTime !== _lastVideoTime) {
+    _lastVideoTime = video.currentTime;
+    _lastProgressTime = Date.now();
+  }
+});
+// v82.18: диагностировано вживую (ТНТ4, История — оба на fs.uplink.kz):
+// hls.js успешно грузит и аппендит сегменты в буфер без единой ошибки, но
+// video.readyState зависает ниже 3 и currentTime не продвигается —
+// микро-разрыв (gap) между буферизованными данными и текущей позицией,
+// который hls.js не всегда перескакивает сам. Раньше это сразу считалось
+// зависанием и запускался полный реконнект — а так как разрыв структурный
+// (в самом потоке источника), после реконнекта та же проблема повторялась
+// снова, и зритель попадал в бесконечный цикл переподключений без реального
+// восстановления показа. Теперь сначала пробуем дешёвый перескок через
+// разрыв, и только если это не помогло — идёт обычный (тяжёлый) реконнект.
+function _tryNudgeGap() {
+  try {
+    if (video.buffered && video.buffered.length) {
+      const end = video.buffered.end(video.buffered.length - 1);
+      if (end - video.currentTime > 0.5) {
+        video.currentTime = Math.max(end - 0.25, video.currentTime + 0.1);
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
+}
+let _watchdogReconnectCount = 0;
+let _nativePlayRetryCount = 0;
+function _watchdogReconnect(statusKey) {
+  if (_watchdogReconnecting || !currentCh || _gaveUp) return;
+  if (!_playedOnce) { _failStreak++; if (_failStreak > MAX_FAIL_STREAK) { _giveUp(); return; } }
+  _watchdogReconnecting = true;
+  _lastProgressTime = Date.now();
+  // v82.29: БЫЛО >= 3 — плеер ждал 3 зависания подряд НА ОДНОМ И ТОМ ЖЕ
+  // прокси, прежде чем переключиться на резервный. Раз Worker уже сам
+  // перебирает все зеркала cinerama.uz на каждый запрос (fetchCinerama),
+  // ждать 3 попытки на одном и том же прокси избыточно — если он завис,
+  // быстрее переключиться на другой (другой edge/сеть), чем упорствовать.
+  // Пользователь сообщил, что канал заводился только после ~6 попыток —
+  // это как раз совпадает с 3 попытки × 2 прокси до переключения. СТАЛО:
+  // переключаемся на резервный сразу после первого же зависания.
+  _watchdogReconnectCount++;
+  if (_watchdogReconnectCount >= 1) { _watchdogReconnectCount = 0; _markProxyFailed(); _advanceProxy(); }
+  setStatus(statusKey, true);
+  stopStream();
+  init().finally(() => { _watchdogReconnecting = false; });
+}
+// Во время AirPlay кадры показывает ТВ: счётчик кадров на телефоне стоит, и сторож сбрасывал бы поток каждые ~10 с
+const _onTv = () => !!video.webkitCurrentPlaybackTargetIsWireless;
+video.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', () => { _lastProgressTime = _lastFrameProgressTime = Date.now(); });
+setInterval(() => {
+  if (_onTv()) return;
+  // v82.12: раньше требовался `hls` (созданный только в ветке hls.js) —
+  // на нативном пути Safari/iOS (canPlayType) hls всегда null, и весь
+  // сторож зависания для него не работал вообще. Логика внутри ни от
+  // чего hls-специфичного не зависит — убрали лишнее условие.
+  if (!currentCh || video.seeking || _watchdogReconnecting || _gaveUp) return;
+  if (video.readyState >= 3 && typeof video.getVideoPlaybackQuality === 'function') {
+    const _vpq = video.getVideoPlaybackQuality();
+    if (_vpq.totalVideoFrames > _lastFrameCount) {
+      _lastFrameCount = _vpq.totalVideoFrames;
+      _lastFrameProgressTime = Date.now();
+    } else if (!video.paused && Date.now() - _lastFrameProgressTime > 9000) {
+      // currentTime может тикать (аудио/системные часы), пока сам видеокадр не
+      // обновляется — картинка визуально замирает/чернеет при формально "живом"
+      // потоке. Проверка по currentTime одна это не ловит.
+      _lastFrameProgressTime = Date.now();
+      _watchdogReconnect('errorStream');
+      return;
+    }
+  }
+  if (video.paused && video.readyState < 3) {
+    // В мини-аппе нет пользовательской паузы во время просмотра (кроме userPaused,
+    // который здесь исключаем) — остановка без буфера означает зависание/сбой.
+    if (userPaused) return;
+    if (Date.now() - _lastProgressTime > (_playedOnce ? 12000 : START_GRACE_MS)) {
+      if (_tryNudgeGap()) { _lastProgressTime = Date.now(); return; }
+      _watchdogReconnect('errorStream');
+    }
+    return;
+  }
+  if (Date.now() - _lastProgressTime > (_playedOnce ? 18000 : START_GRACE_MS)) {
+    if (_tryNudgeGap()) { _lastProgressTime = Date.now(); return; }
+    _watchdogReconnect('errorStream'); return;
+  }
+  if (video.readyState >= 3 && currentCh && PREEMPTIVE_IDS.has(currentCh.id) && Date.now() - _sessionStart > PREEMPTIVE_REFRESH_MS) {
+    _watchdogReconnect('connecting');
+  }
+}, 5000);
 
 // ── Media Session ───────────────────────────────────────────────────────────
 function setupMediaSession() {
@@ -395,7 +781,7 @@ document.addEventListener('visibilitychange', async () => {
     if (isAndroid()) { const a=document.getElementById('audio-bg'); if(a) a.muted=true; }
     if (!userPaused && video.paused) {
       try { await video.play(); } catch(e) { if(currentCh){stopStream();init();} }
-    } else if (!userPaused && video.readyState<2) {
+    } else if (!userPaused && video.readyState<2 && !video.webkitCurrentPlaybackTargetIsWireless) {
       if (currentCh) { stopStream(); init(); }
     }
   }
@@ -409,7 +795,22 @@ function stopStream() {
   if (hls) { hls.destroy(); hls=null; }
   if (hlsAudio) { hlsAudio.destroy(); hlsAudio=null; }
   if (tokenRefreshTimer) { clearInterval(tokenRefreshTimer); tokenRefreshTimer=null; }
-  video.src=''; liveBadge.style.display='none'; liveBadgeTop.style.display='none';
+  // v82.13: снимаем обработчики нативной HLS-ветки ДО video.src='' — иначе
+  // сам сброс src сгенерирует 'error', который поймает обработчик от
+  // предыдущего канала.
+  if (_nativeErrorHandler) { video.removeEventListener('error', _nativeErrorHandler); _nativeErrorHandler = null; }
+  if (_nativeMetaHandler) { video.removeEventListener('loadedmetadata', _nativeMetaHandler); _nativeMetaHandler = null; }
+  video.src='';
+  // v82.19: раньше не вызывали video.load() после сброса src — при быстром
+  // переключении каналов (типичное поведение зрителя, листающего список)
+  // предыдущий MediaSource иногда не успевал полностью отвязаться от
+  // <video> до того, как hls.js следующего канала пытался прикрепить свой
+  // новый MediaSource — элемент оставался в "подвисшем" состоянии и
+  // следующий канал не запускался (readyState вечно 0, без единой
+  // hls.js-ошибки). video.load() принудительно и синхронно сбрасывает
+  // состояние элемента перед следующим attachMedia().
+  try { video.load(); } catch(e) {}
+  liveBadge.style.display='none'; liveBadgeTop.style.display='none';
   if (wakeLockSentinel) { wakeLockSentinel.release().catch(()=>{}); wakeLockSentinel=null; }
 }
 
@@ -418,85 +819,239 @@ function loadStream(url) {
   userUnmuted=false;
   const streamUrl = url;
   stopStream(); setStatus('connecting'); unmuteBtn.style.display='none';
+  _lastProgressTime = Date.now(); _lastVideoTime = 0; _sessionStart = Date.now();
+  _lastFrameCount = 0; _lastFrameProgressTime = Date.now();
+  _playedOnce = false;
+
+  // Web Worker внутри WebView Telegram (особенно старые версии Android/Desktop
+  // клиента) нередко не даёт hls.js создать воркер через blob: URL — тогда
+  // инициализация HLS тихо зависает без единой fatal-ошибки, и канал просто
+  // не запускается. В браузере (сайт) это не проявляется, поэтому в мини-аппе
+  // воркер отключаем принудительно — так надёжнее почти во всех WebView.
+  const HLS_WORKER_SAFE = false;
+
+  // Буфер и дистанция от "живого края" (v82.10.1): у части источников
+  // fs.uplink.kz (Кинoсвидание, Viju и др.) сегменты либо тяжёлые (Кино-
+  // свидание — ~5 Мбит/с при таргет-длительности 6с — на мобильной сети
+  // тонкий буфер съедается за пару секунд и картинка замирает), либо
+  // источник иногда отдаёт в плейлисте самый свежий сегмент чуть раньше,
+  // чем реально успевает его записать (Viju — периодические 404 на
+  // последнем сегменте плейлиста), что при lowLatencyMode + маленьком
+  // liveSyncDurationCount ловится как ошибка загрузки фрагмента и
+  // выглядит как фриз. Раньше держались близко к живому краю ради
+  // минимальной задержки — но для обычного (не Low-Latency) HLS-источника
+  // с собственной внутренней задержкой ~20-30с это не даёт выигрыша,
+  // только хрупкость. Теперь держим больший запас и буфер.
+  const HLS_BUFFER_OPTS = {
+    liveSyncDurationCount: 6,   // не подходим к самому краю — источник иногда ещё не дописал последний сегмент
+    lowLatencyMode: false,      // источники не LL-HLS — этот режим только уменьшал буфер без выигрыша в задержке
+    maxBufferLength: 30,        // сек буфера вперёд — гасит джиттер сети/тяжёлые сегменты
+    maxMaxBufferLength: 60,
+    fragLoadingMaxRetry: 6,
+    fragLoadingRetryDelay: 500,
+    manifestLoadingMaxRetry: 4,
+    // v82.10.2: у части каналов (Первый и др.) источник отдаёт несколько
+    // уровней качества (например, 240p/360p/576p у thestream.cyou), и ABR
+    // hls.js периодически переключается между ними, обрывая уже начатую
+    // загрузку фрагмента ("networkError aborted") — именно это ощущается
+    // как короткие частые фризы. На маленьком экране мини-аппа 576p не
+    // даёт видимого выигрыша, только лишний риск нехватки полосы. Ограничив
+    // выбор уровня реальным размером плеера и стартуя с низкого — ABR
+    // перестаёт скакать между уровнями почти всегда.
+    capLevelToPlayerSize: true,
+    startLevel: 0,
+    abrEwmaDefaultEstimate: 500000, // старт с пессимистичной оценки полосы — не пытаемся сразу хватать 576p
+  };
 
   if (isAndroid()) {
     const audioBg = document.getElementById('audio-bg');
-    if (audioBg && Hls.isSupported()) {
-      hlsAudio = new Hls({ liveSyncDurationCount:3, enableWorker:true });
-      hlsAudio.loadSource(streamUrl); hlsAudio.attachMedia(audioBg);
-      hlsAudio.on(Hls.Events.MANIFEST_PARSED, () => { audioBg.muted=true; audioBg.play().catch(()=>{}); });
+    if (audioBg) {
+      // v82.40: раньше здесь поднимался второй hls.js на тот же поток (двойная нагрузка на источник и воркеры).
+      // Теперь audio-bg играет тихую зацикленную дорожку — медиасессия держится без сетевых запросов.
+      try { if (audioBg.getAttribute('data-silent') !== '1') { audioBg.src = SILENT_WAV; audioBg.loop = true; audioBg.setAttribute('data-silent', '1'); } audioBg.muted = true; audioBg.play().catch(() => {}); } catch (e) {}
     }
   }
 
-  video.muted=true;
-  if (Hls.isSupported()) {
-    hls = new Hls({ liveSyncDurationCount:3, lowLatencyMode:true, enableWorker:true, backBufferLength:30 });
+  video.muted = !(_forceNative && _soundWanted);   // для AirPlay звук должен остаться включённым
+  // AirPlay (iOS): после первого нажатия канал играет встроенным плеером Apple вместо hls.js (_forceNative)
+  const _native = _forceNative && isIOS() && !!video.canPlayType('application/vnd.apple.mpegurl');
+  if (Hls.isSupported() && !_native) {
+    hls = new Hls({ ...HLS_BUFFER_OPTS, enableWorker:HLS_WORKER_SAFE, backBufferLength:30 });
     hls.loadSource(streamUrl); hls.attachMedia(video);
+    try { initQuality(hls); } catch (e) {}
     hls.on(Hls.Events.MANIFEST_PARSED, async () => {
       setStatus('live'); liveBadge.style.display='flex'; liveBadgeTop.style.display='inline';
       try {
         if (!userUnmuted) video.muted=true;
         await video.play();
         unmuteBtn.style.display = audioOnly ? 'none' : 'block';
+        _restoreSound();
         setupMediaSession();
         if (!isIOS()) requestWakeLock();
-      } catch(e) { setStatus('pressPlay'); }
+      } catch(e) { setStatus('pressPlay', true); }
     });
+    let _fatalNetErrCount = 0;
     hls.on(Hls.Events.ERROR, (e, data) => {
       if (!data.fatal) return;
-      if (data.type===Hls.ErrorTypes.NETWORK_ERROR) { try{hls.startLoad();}catch(err){} return; }
+      if (data.type===Hls.ErrorTypes.NETWORK_ERROR) {
+        // v82.14: раньше просто дёргали startLoad() на том же прокси —
+        // если сам прокси/источник реально сломан (не разовый сбой),
+        // получали бесконечный цикл ошибок на нём же. После 2 подряд
+        // фатальных сетевых ошибок переключаемся на резервный прокси.
+        _fatalNetErrCount++;
+        if (_fatalNetErrCount >= 2) {
+          _fatalNetErrCount = 0;
+          _markProxyFailed(); _advanceProxy();
+          setStatus('connecting'); _scheduleInit(1000);
+          return;
+        }
+        try{hls.startLoad();}catch(err){} return;
+      }
       if (data.type===Hls.ErrorTypes.MEDIA_ERROR)   { try{hls.recoverMediaError();}catch(err){} return; }
-      setStatus('errorStream', true); setTimeout(() => init(), 5000);
+      _markProxyFailed(); _advanceProxy();
+      setStatus('errorStream', true); _scheduleInit(3000);
     });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src=streamUrl; setStatus('live'); liveBadge.style.display='flex'; liveBadgeTop.style.display='inline';
+    // Нативный путь (Safari/iOS — hls.js сам уступает браузеру со встроенной
+    // поддержкой HLS). ВАЖНО (v82.12): раньше здесь не было НИКАКОЙ обработки
+    // ошибок — если поток не грузился (а у части источников бывают разовые
+    // сбои на первой попытке: свежий сегмент ещё не записан, редирект,
+    // нестрогое соответствие плейлиста спеке — AVPlayer к этому строже, чем
+    // hls.js), статус навсегда зависал на "Подключение..." без единой
+    // попытки переподключиться. Именно это, похоже, и объясняло "большинство
+    // каналов не играет" именно на iPhone — на десктопе тот же код идёт
+    // через hls.js веткой выше, у которой ретраи есть. Добавлены: обработчик
+    // 'error' на видео + watchdog по таймауту, если воспроизведение не
+    // началось за разумное время.
+    // v82.13: v82.12 добавил сюда addEventListener('error', ..., {once:true}),
+    // но если канал стартовал успешно (сработал 'loadedmetadata'), сам
+    // обработчик error НИКОГДА не срабатывал и НИКОГДА не снимался — оставался
+    // висеть на общем `video`-элементе навсегда. При каждом переключении
+    // канала stopStream() делает video.src='', что само по себе генерирует
+    // событие 'error' — и ВСЕ накопленные с прошлых каналов обработчики
+    // срабатывали одновременно при следующем же переключении, наперебой
+    // вызывая init() и ломая последующую загрузку. Чем больше каналов
+    // переключили — тем хуже. Теперь обработчики именованные и снимаются
+    // явно в обеих ветках (успех/ошибка), плюс на каждый заход в
+    // native-ветку сперва снимаются обработчики от предыдущего захода.
+    if (_nativeErrorHandler) { video.removeEventListener('error', _nativeErrorHandler); _nativeErrorHandler = null; }
+    if (_nativeMetaHandler) { video.removeEventListener('loadedmetadata', _nativeMetaHandler); _nativeMetaHandler = null; }
+    let nativeStarted = false;
+    const nativeTimeout = setTimeout(() => {
+      // v82.14: тоже переключаем прокси перед повтором — раньше повторяли
+      // тот же самый URL, что бессмысленно, если сломан именно прокси.
+      if (!nativeStarted && currentCh) { _markProxyFailed(); _advanceProxy(); setStatus('errorStream', true); _scheduleInit(2000); }
+    }, 25000);
+    _nativeErrorHandler = () => {
+      clearTimeout(nativeTimeout);
+      video.removeEventListener('loadedmetadata', _nativeMetaHandler); _nativeMetaHandler = null;
+      _nativeErrorHandler = null;
+      if (currentCh) { _markProxyFailed(); _advanceProxy(); setStatus('errorStream', true); _scheduleInit(3000); }
+    };
+    _nativeMetaHandler = () => {
+      nativeStarted = true; clearTimeout(nativeTimeout);
+      video.removeEventListener('error', _nativeErrorHandler); _nativeErrorHandler = null;
+      _nativeMetaHandler = null;
+    };
+    video.addEventListener('error', _nativeErrorHandler, { once: true });
+    video.addEventListener('loadedmetadata', _nativeMetaHandler, { once: true });
+    // v82.33: в этой (нативной, AVPlayer/iOS) ветке video.muted НИКОГДА не
+    // выставлялся перед play() — в отличие от hls.js-ветки выше. Автовоспроиз-
+    // ведение СО ЗВУКОМ без предшествующего жеста пользователя браузер/AVPlayer
+    // блокирует — именно из-за этого play() здесь стабильно отклонялся и статус
+    // упирался в "Нажмите ▶" без связи с конкретным источником/каналом.
+    if (!userUnmuted) video.muted = true;
+    const _nUrl = streamUrl;
+    const _pin = _nUrl;
+    video.src=_pin; try { initQualityNative(_nUrl); } catch (e) {} setStatus('connecting'); liveBadge.style.display='flex'; liveBadgeTop.style.display='inline';
     video.play()
-      .then(() => { unmuteBtn.style.display=audioOnly?'none':'block'; setupMediaSession(); if(!isIOS())requestWakeLock(); })
-      .catch(() => setStatus('pressPlay'));
+      .then(() => {
+        nativeStarted = true; clearTimeout(nativeTimeout);
+        video.removeEventListener('error', _nativeErrorHandler); _nativeErrorHandler = null;
+        setStatus('live'); unmuteBtn.style.display=audioOnly?'none':'block'; _restoreSound(); setupMediaSession(); if(!isIOS())requestWakeLock();
+      })
+      .catch((err) => {
+        // v82.46: меню качества сразу после старта подменяет video.src → первый play() получает AbortError («прервано новой загрузкой»).
+        // Это не сбой источника: раньше из-за него дважды писало «Ошибка — переподключаемся» и перезапускало канал по кругу.
+        if (err && err.name === 'AbortError') {
+          video.addEventListener('playing', () => { clearTimeout(nativeTimeout); nativeStarted = true; _nativePlayRetryCount = 0; setStatus('live'); unmuteBtn.style.display = audioOnly ? 'none' : 'block'; _restoreSound(); try { setupMediaSession(); } catch (e) {} }, { once: true });
+          return;
+        }
+        // v82.34: раньше ЛЮБОЙ отказ play() (даже из-за разового сетевого
+        // сбоя/битого первого сегмента у источника — "AVPlayer строже, чем
+        // hls.js", см. комментарий выше) сразу и окончательно показывал
+        // "Нажмите ▶", без единой попытки автоматически восстановиться —
+        // в отличие от обработчика 'error' у этой же ветки, который ретраит.
+        // Раз видео теперь всегда замьючено (v82.33), NotAllowedError
+        // (настоящая блокировка автоплея) практически невозможен — почти
+        // любой отказ здесь на деле сетевой/декодерный. Пробуем автоматически
+        // переключить прокси и повторить (как watchdog), и только после
+        // нескольких неудач подряд отдаём управление пользователю.
+        clearTimeout(nativeTimeout);
+        _nativePlayRetryCount++;
+        if (_nativePlayRetryCount <= 2 && currentCh) {
+          _markProxyFailed(); _advanceProxy();
+          setStatus('errorStream', true);
+          _scheduleInit(1500);
+        } else {
+          setStatus('pressPlay', true);
+        }
+      });
   }
 
-  tokenRefreshTimer = setInterval(async () => {
-    if (!currentCh) return;
-    try {
-      const r = await fetch(currentCh.stream + (currentCh.stream.includes('?')?'&':'?') + 't=' + Date.now(), { cache:'no-store' });
-      const ct = r.headers.get('Content-Type') || '';
-      if (!ct.includes('mpegurl') && !ct.includes('m3u')) {
-        const d = await r.json();
-        if (d.url) {
-          if (hls) hls.loadSource(d.url);
-          if (hlsAudio) hlsAudio.loadSource(d.url);
-        }
-      }
-    } catch(e) {}
-  }, 20 * 60 * 1000);
+  // v82.40: авторефреш каждые 20 минут убран — воркер всегда отдаёт m3u8, hls.js обновляет плейлист сам, а лишний запрос только нагружал воркеры.
 }
 
 async function init() {
   if (!currentCh) return;
   setStatus('loading'); reloadBtn.style.display='none'; unmuteBtn.style.display='none';
   try {
-    const sep = currentCh.stream.includes('?') ? '&' : '?';
-    const r = await fetch(currentCh.stream + sep + 't=' + Date.now(), { cache:'no-store' });
-    const ct = r.headers.get('Content-Type') || '';
-    if (ct.includes('mpegurl') || ct.includes('m3u')) {
-      loadStream(currentCh.stream);
-    } else {
-      const d = await r.json();
-      if (d.url) loadStream(d.url); else setStatus('errorUrl', true);
-    }
-  } catch(e) { setStatus('errorServer', true); }
+    // v82.35: раньше здесь был ручной fetch() плейлиста только чтобы
+    // проверить Content-Type — а затем hls.js/нативный плеер тут же ЗАНОВО
+    // фетчил тот же самый URL сам. То есть КАЖДОЕ открытие канала и КАЖДЫЙ
+    // реконнект стоили 2 запроса к Worker вместо одного. Проверка Content-
+    // Type была нужна для старой ветки "Worker вернул JSON с .url" — при
+    // текущей архитектуре Worker при успехе ВСЕГДА отдаёт m3u8 напрямую
+    // (JSON — только при ошибках, которые и так ловятся через .catch ниже
+    // и обработчики ошибок hls.js/видео), так что эта ветка давно мертва.
+    // Убрали лишний fetch — при том же трафике зрителей нагрузка на Worker
+    // от плейлистов падает примерно вдвое.
+    const streamUrl = _streamUrl(currentCh);
+    loadStream(streamUrl);
+  } catch(e) {
+    // v82.14: сбой текущего прокси (сеть/HTTP-ошибка) — переключаемся на
+    // резервный и пробуем ещё раз, прежде чем показывать ошибку зрителю.
+    // v82.30: БЫЛО 3000мс задержки перед повтором. У cinerama.uz-каналов
+    // блокировка датацентрового IP часто временная и снимается сама за
+    // секунду-две (see fetchCinerama на Worker'е) — три секунды ожидания на
+    // КАЖДУЮ попытку создавали ощущение "долго не заводится", хотя по сути
+    // достаточно было просто быстрее повторить запрос. СТАЛО 1000мс.
+    _markProxyFailed(); _advanceProxy();
+    setStatus('errorServer', true);
+    try { statusEl.innerHTML += ' <small>[' + ((e && (e.name + ': ' + e.message)) || e) + ']</small>'; } catch (x) {}   // диагностика: показать причину
+    _scheduleInit(1000);
+  }
 }
 
 // ── Кнопки ─────────────────────────────────────────────────────────────────
-reloadBtn.onclick = () => { userPaused=false; init(); };
+reloadBtn.onclick = () => { userPaused=false; _resetRetry(); init(); };
+// v82.32: статус "Нажмите ▶" (video.play() отклонён браузером/AVPlayer —
+// чаще всего это autoplay-политика) раньше не давал НИКАКОЙ возможности
+// возобновить воспроизведение: кнопка "Переподключиться" показывалась
+// только при isError=true, а setStatus('pressPlay') вызывался БЕЗ этого
+// флага — пользователь упирался в текст без единого рабочего элемента.
+// Плюс клик по самому видео — самый естественный жест "нажмите ▶".
+video.addEventListener('click', () => {
+  if (video.paused) video.play().catch(() => {});
+});
 unmuteBtn.onclick = () => {
   const ab = document.getElementById('audio-bg');
   if (video.muted) {
-    video.muted=false; video.volume=1; userUnmuted=true;
+    video.muted=false; video.volume=1; userUnmuted=true; _soundWanted=true;
     unmuteBtn.textContent = '🔇 '+t.mute;
     if (ab) { ab.muted=true; ab.pause(); }
   } else {
-    video.muted=true; userUnmuted=false;
+    video.muted=true; userUnmuted=false; _soundWanted=false;
     unmuteBtn.textContent = '🔊 '+t.unmute;
     if (ab && isIOS()) { ab.muted=false; ab.volume=0; ab.play().catch(()=>{}); }
   }
@@ -516,11 +1071,13 @@ function buildHub() {
       const card = document.createElement('div');
       card.className = 'channel-card';
       card.style.setProperty('--ch-color', ch.color);
+      const iconHtml = ch.logo
+        ? `<div class="ch-icon ch-logo"><img src="${ch.logo}" alt="${ch.icon}" loading="lazy" onerror="this.parentElement.outerHTML='&lt;div class=&quot;ch-icon&quot; style=&quot;background:${ch.iconBg};color:${ch.color}&quot;&gt;${ch.icon}&lt;/div&gt;'"></div>`
+        : `<div class="ch-icon" style="background:${ch.iconBg};color:${ch.color}">${ch.icon}</div>`;
       card.innerHTML = `
-        <div class="ch-icon" style="background:${ch.iconBg};color:${ch.color}">${ch.icon}</div>
+        ${iconHtml}
         <div class="ch-info">
           <div class="ch-name">${ch.name}</div>
-          <div class="ch-desc">${ch.desc}</div>
         </div>
         <div class="live-dot"></div>`;
       card.onclick = () => openChannel(ch);
@@ -530,7 +1087,7 @@ function buildHub() {
 }
 
 function openChannel(ch) {
-  currentCh = ch;
+  currentCh = ch; _soundWanted = false; _resetRetry();
   hubScreen.style.display = 'none';
   playerScreen.style.display = 'flex';
   chTitle.textContent = ch.name;
@@ -538,7 +1095,16 @@ function openChannel(ch) {
   liveBadge.style.background = ch.color;
   audioOnly = false; document.body.classList.remove('audio-only');
   modeBtn.textContent = t.audioMode;
-  stopStream(); init();
+  _watchdogReconnectCount = 0; // v82.14: новый канал — начинаем счёт сбоев прокси заново
+  _nativePlayRetryCount = 0; // v82.34: новый канал — счёт неудачных play() в нативной ветке заново
+
+  video.style.display = '';
+  statusEl.style.display = '';
+  modeBtn.style.display = '';
+  fullscreenBtn.style.display = '';
+  siteLinkBtn.style.display = '';
+  stopStream();
+  init();
 }
 
 function goToHub() {
@@ -551,6 +1117,44 @@ function goToHub() {
 backBtn.onclick = () => goToHub();
 
 buildHub();
+// ── Благодарность через Telegram Stars (⭐): окно выбора суммы, оплата tg.openInvoice (v82.44) ──
+const BOT_API = 'https://korea-bot-worker.dyaltd.workers.dev';
+const THANK = { ko:'⭐ 감사하기', en:'⭐ Say thanks' };
+const thankText = THANK[getLang()] || THANK.en;
+const donateModal = document.getElementById('donate-modal');
+function openDonate() {
+  document.getElementById('donate-title').textContent = thankText;
+  const box = document.getElementById('donate-amounts'); box.innerHTML = '';
+  [25, 50, 100, 250].forEach(n => {
+    const b = document.createElement('button'); b.textContent = '⭐ ' + n;
+    b.onclick = () => payStars(n); box.appendChild(b);
+  });
+  donateModal.style.display = 'flex';
+}
+async function payStars(amount) {
+  try {
+    const r = await fetch(BOT_API + '/invoice?amount=' + amount);
+    const d = await r.json();
+    if (!d.url || !tg?.openInvoice) return;
+    donateModal.style.display = 'none';
+    tg.openInvoice(d.url);
+  } catch (e) {}
+}
+document.getElementById('donate-close').onclick = () => { donateModal.style.display = 'none'; };
+donateModal.addEventListener('click', e => { if (e.target === donateModal) donateModal.style.display = 'none'; });
+['thank-btn-hub', 'thank-btn-player'].forEach(id => {
+  const el = document.getElementById(id); el.textContent = thankText; el.onclick = openDonate;
+});
+
+// v82.43/44: t.me/KoreaTVHub_bot/koreatv?startapp=<id канала> (например ebs1) открывает мини-апп сразу на этом канале, startapp=donate — окно ⭐
+// В Telegram location.hash непустой (#tgWebAppData=...), поэтому параметр запуска берём из initDataUnsafe, tgWebAppStartParam или простого #id
+try {
+  const hp = new URLSearchParams((location.hash || '').replace('#', ''));
+  const hashId = (location.hash || '').indexOf('=') < 0 ? (location.hash || '').replace('#', '') : '';
+  const sp = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || hp.get('tgWebAppStartParam') || hashId || '';
+  if (sp === 'donate') openDonate();
+  else if (sp) { const chx = CHANNEL_GROUPS.flatMap(g => g.channels).find(c => c.id === sp); if (chx) openChannel(chx); }
+} catch (e) {}
 </script>
 </body>
 </html>
