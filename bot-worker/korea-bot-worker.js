@@ -24,14 +24,14 @@ const CONTACT = 'dyaltd@gmail.com';
 
 // Каналы по темам — один список для /start, /channels и /post (совпадает с мини-аппом, 40 каналов)
 const GROUPS = [
-  { e: '🌏', ko: '국제', en: 'International', list_ko: '아리랑TV · 아리랑라디오', list_en: 'Arirang TV · Arirang Radio', n: 2 },
-  { e: '📺', ko: '종합편성', en: 'General', list_ko: 'TV조선 · TV조선2', list_en: 'TV Chosun · TV Chosun 2', n: 2 },
-  { e: '📚', ko: 'EBS', en: 'EBS', list_ko: 'EBS 1TV · 2TV · 플러스1 · 플러스2 · 키즈 · 잉글리시', list_en: 'EBS 1TV · 2TV · Plus1 · Plus2 · Kids · English', n: 6 },
-  { e: '🏛️', ko: '공영·정책', en: 'Public & Culture', list_ko: 'KTV · 국악방송 · 방송대학TV · 농수산방송', list_en: 'KTV · Gugak TV · OUN · NBS', n: 4 },
-  { e: '📍', ko: '지역', en: 'Regional', list_ko: '제주MBC · 광주KBC · 울산UBC · 교통방송TBS · 춘천MBC · 대전MBC · NHTV · 남인천방송 · 지방자치TV · 금강방송', list_en: 'MBC Jeju · SBS KBC · SBS UBC · TBS Seoul · MBC Chuncheon · MBC Daejeon · NHTV · NIB · JJCTV · KCN', n: 10 },
-  { e: '📈', ko: '경제·쇼핑', en: 'Business & Shopping', list_ko: '한국경제TV · 매일경제TV · KT알파쇼핑 · CJ온스타일 · CJ온스타일 플러스 · GS SHOP · 롯데홈쇼핑 · 신세계TV쇼핑 · 공영쇼핑', list_en: 'WOWTV · MK Money · KT Alpha Shopping · CJ OnStyle · CJ OnStyle Plus · GS SHOP · Lotte Home Shopping · Shinsegae TV Shopping · Gongyoung Shopping', n: 9 },
-  { e: '⛪', ko: '종교', en: 'Religious', list_ko: 'BTN · ABN · FGTV · RUTC · BBS 불교방송', list_en: 'BTN · ABN · FGTV · RUTC · BBS Buddhist TV', n: 5 },
-  { e: '🎵', ko: '음악·라디오', en: 'Music & Radio', list_ko: 'TBS eFM · TBS FM', list_en: 'TBS eFM · TBS FM', n: 2 },
+  { e: '🌏', short: 'Arirang TV · Radio', ko: '국제', en: 'International', list_ko: '아리랑TV · 아리랑라디오', list_en: 'Arirang TV · Arirang Radio', n: 2 },
+  { e: '📺', short: 'TV조선 · TV조선2', ko: '종합편성', en: 'General', list_ko: 'TV조선 · TV조선2', list_en: 'TV Chosun · TV Chosun 2', n: 2 },
+  { e: '📚', short: 'EBS ×6 — 1TV · 2TV · Plus · Kids · English', ko: 'EBS', en: 'EBS', list_ko: 'EBS 1TV · 2TV · 플러스1 · 플러스2 · 키즈 · 잉글리시', list_en: 'EBS 1TV · 2TV · Plus1 · Plus2 · Kids · English', n: 6 },
+  { e: '🏛️', short: 'KTV · 국악방송 · OUN · NBS', ko: '공영·정책', en: 'Public & Culture', list_ko: 'KTV · 국악방송 · 방송대학TV · 농수산방송', list_en: 'KTV · Gugak TV · OUN · NBS', n: 4 },
+  { e: '📍', short: 'Regional ×10 — 제주 · 광주 · 울산 · TBS · 춘천 · 대전 …', ko: '지역', en: 'Regional', list_ko: '제주MBC · 광주KBC · 울산UBC · 교통방송TBS · 춘천MBC · 대전MBC · NHTV · 남인천방송 · 지방자치TV · 금강방송', list_en: 'MBC Jeju · SBS KBC · SBS UBC · TBS Seoul · MBC Chuncheon · MBC Daejeon · NHTV · NIB · JJCTV · KCN', n: 10 },
+  { e: '📈', short: 'WOWTV · MK Money · Shopping ×7', ko: '경제·쇼핑', en: 'Business & Shopping', list_ko: '한국경제TV · 매일경제TV · KT알파쇼핑 · CJ온스타일 · CJ온스타일 플러스 · GS SHOP · 롯데홈쇼핑 · 신세계TV쇼핑 · 공영쇼핑', list_en: 'WOWTV · MK Money · KT Alpha Shopping · CJ OnStyle · CJ OnStyle Plus · GS SHOP · Lotte Home Shopping · Shinsegae TV Shopping · Gongyoung Shopping', n: 9 },
+  { e: '⛪', short: 'BTN · ABN · FGTV · RUTC · BBS', ko: '종교', en: 'Religious', list_ko: 'BTN · ABN · FGTV · RUTC · BBS 불교방송', list_en: 'BTN · ABN · FGTV · RUTC · BBS Buddhist TV', n: 5 },
+  { e: '🎵', short: 'TBS eFM · TBS FM', ko: '음악·라디오', en: 'Music & Radio', list_ko: 'TBS eFM · TBS FM', list_en: 'TBS eFM · TBS FM', n: 2 },
 ];
 const TOTAL = GROUPS.reduce((a, g) => a + g.n, 0);   // 40
 
@@ -64,11 +64,9 @@ const channelsText = (lang) => `<b>${esc(L[lang].channels_t)} (${TOTAL})</b>\n\n
 
 // Пост в канал: корейский + английский
 const POST_TEXT =
-  `🇰🇷 <b>KOREA·TV — 실시간 채널 ${TOTAL}개</b> 🔴\n무료 · 가입 없이 · VPN 없이 · 24시간\n\n` +
-  GROUPS.map((g) => `${g.e} <b>${esc(g.ko)}</b> — ${esc(g.list_ko)}`).join('\n') +
-  `\n\n━━━━━━━━━━━━━━━━━━━━\n\n🇬🇧 <b>KOREA·TV — ${TOTAL} live channels</b> 🔴\nFree · no sign-up · no VPN · 24/7\n\n` +
-  GROUPS.map((g) => `${g.e} <b>${esc(g.en)}</b> — ${esc(g.list_en)}`).join('\n') +
-  `\n\n📱 iPhone, Android, PC · AirPlay / Chromecast on the website\n🌐 korea-tv.uk\n\n👇 앱 열기 · Open the app`;
+  `🇰🇷 <b>KOREA·TV — ${TOTAL} live</b> 🔴\n무료 · Free · no sign-up · no VPN · 24/7\n\n` +
+  GROUPS.map((g) => `${g.e} ${esc(g.short)}`).join('\n') +
+  `\n\n📱 iOS · Android · PC · AirPlay / Chromecast\n🌐 korea-tv.uk\n\n👇 앱 열기 · Open the app`;
 
 const postKb = () => ({ inline_keyboard: [
   [{ text: '📺 Open Korea TV Live', url: APP_URL, style: 'success' }],
