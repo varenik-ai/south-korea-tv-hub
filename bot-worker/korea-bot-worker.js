@@ -64,11 +64,11 @@ const channelsText = (lang) => `<b>${esc(L[lang].channels_t)} (${TOTAL})</b>\n\n
 
 // Пост в канал: корейский + английский
 const POST_TEXT =
-  `🇰🇷 <b>KOREA·TV — 실시간 채널 ${TOTAL}개</b> 🔴\n\n한국 방송을 텔레그램에서 무료로 시청하세요 — 가입 없이, 24시간.\n\n` +
+  `🇰🇷 <b>KOREA·TV — 실시간 채널 ${TOTAL}개</b> 🔴\n무료 · 가입 없이 · VPN 없이 · 24시간\n\n` +
   GROUPS.map((g) => `${g.e} <b>${esc(g.ko)}</b> — ${esc(g.list_ko)}`).join('\n') +
-  `\n\n━━━━━━━━━━━━━━━━━━━━\n\n🇬🇧 <b>KOREA·TV — ${TOTAL} live channels</b> 🔴\n\nWatch South Korean TV free on Telegram — no registration, 24/7.\n\n` +
+  `\n\n━━━━━━━━━━━━━━━━━━━━\n\n🇬🇧 <b>KOREA·TV — ${TOTAL} live channels</b> 🔴\nFree · no sign-up · no VPN · 24/7\n\n` +
   GROUPS.map((g) => `${g.e} <b>${esc(g.en)}</b> — ${esc(g.list_en)}`).join('\n') +
-  `\n\n👇 아래 버튼을 눌러 채널을 선택하세요 · Tap the button below to pick a channel`;
+  `\n\n📱 iPhone, Android, PC · AirPlay / Chromecast on the website\n🌐 korea-tv.uk\n\n👇 앱 열기 · Open the app`;
 
 const postKb = () => ({ inline_keyboard: [
   [{ text: '📺 Open Korea TV Live', url: APP_URL, style: 'success' }],
