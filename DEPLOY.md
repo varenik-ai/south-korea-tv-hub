@@ -10,7 +10,7 @@
 | Бот `korea-bot-worker` (`bot-worker/`) | `main` | так же, Workers Builds |
 | Сайт korea-tv.uk | репозиторий `varenik-ai/korea-tv-uk-website` | GitHub Pages |
 
-Проверка версии воркера: `https://korea-worker.dyaltd.workers.dev/version` (сейчас `1.7.0`, `mode: hybrid`, `channels: 39`, `direct: 29`).
+Проверка версии воркера: `https://korea-worker.dyaltd.workers.dev/version` (сейчас `1.7.1`, `mode: hybrid`, `channels: 40`, `direct: 30`).
 
 ## Секреты (только в Cloudflare, никогда в репозитории — он публичный)
 Cloudflare → Workers & Pages → воркер → Settings → Variables and Secrets (тип Secret), после изменения — Deploy.

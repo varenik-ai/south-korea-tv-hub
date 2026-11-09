@@ -1,6 +1,6 @@
 # Korea TV Hub — мини-апп, воркер потоков и бот
 
-39 корейских каналов в прямом эфире: Telegram-мини-апп **Korea TV Live** (@KoreaTVHub_bot), Cloudflare-воркер,
+40 корейских каналов в прямом эфире: Telegram-мини-апп **Korea TV Live** (@KoreaTVHub_bot), Cloudflare-воркер,
 который отдаёт плейлисты, и бот. Сайт korea-tv.uk лежит в соседнем репозитории
 [`varenik-ai/korea-tv-uk-website`](https://github.com/varenik-ai/korea-tv-uk-website) и использует тот же воркер.
 

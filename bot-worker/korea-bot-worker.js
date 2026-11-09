@@ -22,18 +22,18 @@ const STARS = [25, 100, 500];                                       // сумм�
 const DONATE_AMOUNTS = [25, 50, 100, 250];                          // суммы окна «⭐ 감사하기» в мини-аппе (/invoice)
 const CONTACT = 'dyaltd@gmail.com';
 
-// Каналы по темам — один список для /start, /channels и /post (совпадает с мини-аппом, 39 каналов)
+// Каналы по темам — один список для /start, /channels и /post (совпадает с мини-аппом, 40 каналов)
 const GROUPS = [
   { e: '🌏', ko: '국제', en: 'International', list_ko: '아리랑TV · 아리랑라디오', list_en: 'Arirang TV · Arirang Radio', n: 2 },
   { e: '📺', ko: '종합편성', en: 'General', list_ko: 'TV조선 · TV조선2', list_en: 'TV Chosun · TV Chosun 2', n: 2 },
   { e: '📚', ko: 'EBS', en: 'EBS', list_ko: 'EBS 1TV · 2TV · 플러스1 · 플러스2 · 키즈 · 잉글리시', list_en: 'EBS 1TV · 2TV · Plus1 · Plus2 · Kids · English', n: 6 },
   { e: '🏛️', ko: '공영·정책', en: 'Public & Culture', list_ko: 'KTV · 국악방송 · 방송대학TV · 농수산방송', list_en: 'KTV · Gugak TV · OUN · NBS', n: 4 },
   { e: '📍', ko: '지역', en: 'Regional', list_ko: '제주MBC · 광주KBC · 울산UBC · 교통방송TBS · 춘천MBC · 대전MBC · NHTV · 남인천방송 · 지방자치TV · 금강방송', list_en: 'MBC Jeju · SBS KBC · SBS UBC · TBS Seoul · MBC Chuncheon · MBC Daejeon · NHTV · NIB · JJCTV · KCN', n: 10 },
-  { e: '📈', ko: '경제·쇼핑', en: 'Business & Shopping', list_ko: '한국경제TV · 매일경제TV · KT알파쇼핑 · CJ온스타일 · CJ온스타일 플러스 · GS SHOP · 롯데홈쇼핑 · 신세계TV쇼핑', list_en: 'WOWTV · MK Money · KT Alpha Shopping · CJ OnStyle · CJ OnStyle Plus · GS SHOP · Lotte Home Shopping · Shinsegae TV Shopping', n: 8 },
+  { e: '📈', ko: '경제·쇼핑', en: 'Business & Shopping', list_ko: '한국경제TV · 매일경제TV · KT알파쇼핑 · CJ온스타일 · CJ온스타일 플러스 · GS SHOP · 롯데홈쇼핑 · 신세계TV쇼핑 · 공영쇼핑', list_en: 'WOWTV · MK Money · KT Alpha Shopping · CJ OnStyle · CJ OnStyle Plus · GS SHOP · Lotte Home Shopping · Shinsegae TV Shopping · Gongyoung Shopping', n: 9 },
   { e: '⛪', ko: '종교', en: 'Religious', list_ko: 'BTN · ABN · FGTV · RUTC · BBS 불교방송', list_en: 'BTN · ABN · FGTV · RUTC · BBS Buddhist TV', n: 5 },
   { e: '🎵', ko: '음악·라디오', en: 'Music & Radio', list_ko: 'TBS eFM · TBS FM', list_en: 'TBS eFM · TBS FM', n: 2 },
 ];
-const TOTAL = GROUPS.reduce((a, g) => a + g.n, 0);   // 39
+const TOTAL = GROUPS.reduce((a, g) => a + g.n, 0);   // 40
 
 const LANGS = ['ko', 'en'];
 const pickLang = (code) => { const l = (code || 'ko').split('-')[0].toLowerCase(); return LANGS.includes(l) ? l : 'en'; };
