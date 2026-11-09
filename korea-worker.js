@@ -2,7 +2,7 @@
 // Клон структуры russia-worker.js (github.com/varenik-ai/russia-tv-hub)
 // Деплой: push в main — Cloudflare Workers Builds выкатывает сам (см. DEPLOY.md). Секрет PROXY_SECRET — только в Cloudflare.
 
-const VERSION = '1.7.0';
+const VERSION = '1.7.1';
 
 // ── Защита прокси ────────────────────────────────────────────────────────────
 // Секрет PROXY_SECRET задаётся в настройках воркера (не в коде, репозиторий публичный):
@@ -102,24 +102,7 @@ const STREAMS = {
   gsshop:         'https://gstv-gsshop.gsshop.com/gsshop_hd/gsshop_hd.stream/playlist.m3u8',
   lotte:          'https://pchlslivesw.lotteimall.com/live/livestream/lotteimalllive_mp4.m3u8',
   shinsegae:      'https://liveout.catenoid.net/live-02-shinsegaetvshopping/shinsegaetvshopping_720p/playlist.m3u8',
-  // ── КАНДИДАТЫ (временно, проверка через Cloudflare; на сайте/в мини-аппе/в боте не показываются) ──
-  // Источник: таблица каналов от 2026-11-09 (вторая). После проверки остаются только прошедшие.
-  cand_gongyoung:     'https://etv.publichs.com/live5.stream/playlist.m3u8',
-  cand_mtn:           'http://183.110.27.87/mtnlive/720/playlist.m3u8',
-  cand_rtv:           'https://rtv-stream2.a04f922e9e85c8d25ebfeae3dfd22a67.com/rtv/rtv.m3u8',
-  cand_sbs_jtv:       'http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8',
-  cand_channela:      'http://channelalive.ktcdn.co.kr/chalivepc/_definst_/atv2/playlist.m3u8',
-  cand_mbc_busan:     'https://stream.bsmbc.com/livetv/BusanMBC_TV_onairstream/playlist.m3u8',
-  cand_mbc_gwangju:   'https://media.kjmbc.co.kr/hls/live/stream/playlist.m3u8',
-  cand_mbc_jeonju:    'https://5ee9633b25727.streamlock.net/jmbc_tv/_definst_/jmbc_tv.stream/playlist.m3u8',
-  cand_mbc_gyeongnam: 'https://624a79c87201d.streamlock.net/MBCTV/TV1.stream/playlist.m3u8',
-  cand_sbs_knn:       'https://stream1.knn.co.kr/hls/9ly4534y7dm2xfa123r2_tv/index.m3u8',
-  cand_sbs_tbc:       'http://203.251.91.122:1935/on-air-Backup/tv/playlist.m3u8',
-  cand_sbs_cjb:       'http://1.222.207.80:1935/live/cjbtv/playlist.m3u8',
-  cand_sbs_g1:        'http://61.82.49.4:1935/live/_definst_/tv.stream/playlist.m3u8',
-  cand_sbs_jibs:      'http://123.140.197.22/stream/1/play.m3u8',
-  cand_nsshop:        'https://livestream.nsmall.com/IPHONE/nsmallMobile.m3u8',
-  cand_hyundai:       'https://livejj.hyundaihmall.com:8443/live/ngrp:hmall.stream_pc/playlist.m3u8',
+  gongyoung:      'https://etv.publichs.com/live5.stream/playlist.m3u8',   // 공영쇼핑, добавлен 2026-11-09 (вторая таблица)
 };
 
 // ── Гибридный режим (v1.6.0) ────────────────────────────────────────────────
@@ -134,7 +117,7 @@ const DIRECT = new Set([
   'ktv', 'gugak', 'oun', 'nbs', 'tbs', 'tbs_efm', 'tbs_fm',
   'mbc_jeju', 'mbc_chuncheon', 'mbc_daejeon', 'sbs_kbc',
   'btn', 'abn', 'fgtv', 'rutc', 'jjctv', 'wowtv', 'ktalpha',
-  'cjonstyle', 'cjonstyle_plus', 'gsshop', 'shinsegae',
+  'cjonstyle', 'cjonstyle_plus', 'gsshop', 'shinsegae', 'gongyoung',
 ]);
 
 function isSegment(u) {
